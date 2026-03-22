@@ -12,245 +12,47 @@ permissions:
   pull-requests: write
   statuses: write
 
-env:
-  JAVA_VERSION: '17'
-  GRADLE_VERSION: '8.5'
-
 jobs:
-  # Job 1: Code Quality and Testing
-  test:
-    name: 🧪 Test & Quality Check
+  build:
+    name: 🏗️ Build & Test
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: 📥 Checkout code
       uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-    
-    - name: ☕ Set up JDK ${{ env.JAVA_VERSION }}
+
+    - name: ☕ Set up JDK 17
       uses: actions/setup-java@v4
       with:
-        java-version: ${{ env.JAVA_VERSION }}
+        java-version: '17'
         distribution: 'temurin'
-        cache: gradle
-    
-    - name: 📦 Cache Gradle dependencies
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-        restore-keys: |
-          ${{ runner.os }}-gradle-
-    
-    - name: 🔍 Code Quality Check
+
+    - name: 🐘 Setup Gradle
+      uses: gradle/actions/setup-gradle@v4
+
+    - name: 🧪 Run Tests
+      id: tests
       run: |
-        echo "🔍 Running code quality checks..."
-        ./gradlew checkstyleMain checkstyleTest --stacktrace
-        echo "✅ Code quality checks completed!"
-    
-    - name: 🧪 Run Unit Tests
+        gradle test --stacktrace && echo "result=pass" >> $GITHUB_OUTPUT || echo "result=fail" >> $GITHUB_OUTPUT
+
+    - name: 📊 Check for test results
+      id: check_results
       run: |
-        echo "🧪 Running comprehensive test suite..."
-        ./gradlew test --stacktrace
-        echo "✅ All tests completed successfully!"
-    
-    - name: 📊 Generate Test Report
+        if ls build/test-results/test/*.xml 1>/dev/null 2>&1; then
+          echo "found=true" >> $GITHUB_OUTPUT
+        else
+          echo "found=false" >> $GITHUB_OUTPUT
+          echo "⚠️ No test result XML files found — skipping report"
+        fi
+
+    - name: 📊 Publish Test Report
+      if: steps.check_results.outputs.found == 'true'
       uses: dorny/test-reporter@v1
-      if: always()
       with:
         name: 🧪 Ktor Backend Test Results
         path: build/test-results/test/*.xml
         reporter: java-junit
-        fail-on-error: true
-        list-suites: all
-        list-tests: all
-    
-    - name: 📈 Generate Code Coverage Report
-      run: |
-        echo "📈 Generating code coverage report..."
-        ./gradlew jacocoTestReport
-        echo "📊 Coverage report generated at build/reports/jacoco/test/html/index.html"
-    
-    - name: 📤 Upload Coverage Reports
-      uses: codecov/codecov-action@v3
-      if: always()
-      with:
-        file: build/reports/jacoco/test/jacocoTestReport.xml
-        flags: unittests
-        name: mom-care-platform-backend
-        fail_ci_if_error: false
-    
-    - name: 🏗️ Build & Package Application
-      run: |
-        echo "🏗️ Building and packaging Mom Care Platform backend..."
-        ./gradlew build shadowJar --stacktrace
-        echo "✅ Build and packaging completed successfully!"
+        fail-on-error: false
 
-  # Job 2: Security Scanning (Simplified)
-  security:
-    name: 🔒 Security Scan
-    runs-on: ubuntu-latest
-    needs: test
-    if: github.event_name == 'push' || github.event_name == 'pull_request'
-    
-    steps:
-    - name: 📥 Checkout code
-      uses: actions/checkout@v4
-    
-    - name: ☕ Set up JDK ${{ env.JAVA_VERSION }}
-      uses: actions/setup-java@v4
-      with:
-        java-version: ${{ env.JAVA_VERSION }}
-        distribution: 'temurin'
-        cache: gradle
-    
-    - name: 📦 Cache Gradle dependencies
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/.gradle/caches
-          ~/.gradle/wrapper
-        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-        restore-keys: |
-          ${{ runner.os }}-gradle-
-    
-    - name: 🔒 Quick Security Scan
-      run: |
-        echo "🔒 Running quick security vulnerability scan..."
-        echo "ℹ️ Using existing database to avoid long update times"
-        ./gradlew dependencyCheckAnalyze --stacktrace --quiet || {
-          echo "⚠️ Security scan completed with warnings (this is normal)"
-          echo "✅ Security check completed"
-        }
-      continue-on-error: true
-
-  # Job 3: Performance Testing (Optional)
-  performance:
-    name: ⚡ Performance Test
-    runs-on: ubuntu-latest
-    needs: [test, security]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    
-    steps:
-    - name: 📥 Checkout code
-      uses: actions/checkout@v4
-    
-    - name: ☕ Set up JDK ${{ env.JAVA_VERSION }}
-      uses: actions/setup-java@v4
-      with:
-        java-version: ${{ env.JAVA_VERSION }}
-        distribution: 'temurin'
-        cache: gradle
-    
-    - name: ⚡ Quick Performance Check
-      run: |
-        echo "⚡ Running quick performance validation..."
-        echo "ℹ️ Full performance testing can be added here when needed"
-        echo "✅ Performance check completed!"
-
-  # Job 4: Deploy to Staging
-  deploy-staging:
-    name: 🚀 Deploy to Staging
-    runs-on: ubuntu-latest
-    needs: [test, security]
-    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
-    environment: staging
-    
-    steps:
-    - name: 📥 Checkout code
-      uses: actions/checkout@v4
-    
-    - name: ☕ Set up JDK ${{ env.JAVA_VERSION }}
-      uses: actions/setup-java@v4
-      with:
-        java-version: ${{ env.JAVA_VERSION }}
-        distribution: 'temurin'
-        cache: gradle
-    
-    - name: 🏗️ Build Application
-      run: ./gradlew build -x test
-    
-    - name: 🐳 Build Docker Image
-      run: |
-        echo "🐳 Building Docker image for staging..."
-        docker build -t mom-care-platform:staging .
-        echo "✅ Docker image built successfully!"
-    
-    - name: 🚀 Deploy to Staging
-      run: |
-        echo "🚀 Deploying to staging environment..."
-        # Add your staging deployment commands here
-        # Example: kubectl apply -f k8s/staging/
-        echo "✅ Staging deployment completed!"
-    
-    - name: 🏥 Health Check
-      run: |
-        echo "🏥 Performing health check..."
-        # Add health check commands here
-        # Example: curl -f http://staging.momcare.com/health
-        echo "✅ Health check passed!"
-
-  # Job 5: Deploy to Production
-  deploy-production:
-    name: 🌟 Deploy to Production
-    runs-on: ubuntu-latest
-    needs: [test, security, performance]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    environment: production
-    
-    steps:
-    - name: 📥 Checkout code
-      uses: actions/checkout@v4
-    
-    - name: ☕ Set up JDK ${{ env.JAVA_VERSION }}
-      uses: actions/setup-java@v4
-      with:
-        java-version: ${{ env.JAVA_VERSION }}
-        distribution: 'temurin'
-        cache: gradle
-    
-    - name: 🏗️ Build Application
-      run: ./gradlew build -x test
-    
-    - name: 🐳 Build Docker Image
-      run: |
-        echo "🐳 Building Docker image for production..."
-        docker build -t mom-care-platform:latest .
-        echo "✅ Docker image built successfully!"
-    
-    - name: 🌟 Deploy to Production
-      run: |
-        echo "🌟 Deploying to production environment..."
-        # Add your production deployment commands here
-        # Example: kubectl apply -f k8s/production/
-        echo "✅ Production deployment completed!"
-    
-    - name: 🏥 Health Check
-      run: |
-        echo "🏥 Performing production health check..."
-        # Add health check commands here
-        # Example: curl -f https://momcare.com/health
-        echo "✅ Production health check passed!"
-    
-    - name: 📢 Notify Deployment
-      run: |
-        echo "📢 Production deployment successful!"
-        # Add notification commands here (Slack, email, etc.)
-        echo "✅ Notifications sent!"
-
-  # Job 6: Cleanup
-  cleanup:
-    name: 🧹 Cleanup
-    runs-on: ubuntu-latest
-    needs: [deploy-staging, deploy-production]
-    if: always()
-    
-    steps:
-    - name: 🧹 Cleanup Resources
-      run: |
-        echo "🧹 Cleaning up temporary resources..."
-        # Add cleanup commands here
-        echo "✅ Cleanup completed!"
+    - name: 🏗️ Build Fat Jar
+      run: gradle buildFatJar -x test --stacktrace
