@@ -12,13 +12,11 @@ COPY src/ src/
 
 RUN ./gradlew buildFatJar -x test --no-daemon
 
-FROM openjdk:17-jre-slim
+FROM eclipse-temurin:17-jre-alpine
 
-RUN apt-get update && apt-get install -y \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache curl
 
-RUN groupadd -r appuser && useradd -r -g appuser appuser
+RUN addgroup -S appuser && adduser -S appuser -G appuser
 
 WORKDIR /app
 
