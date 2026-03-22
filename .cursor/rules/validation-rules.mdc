@@ -1,0 +1,51 @@
+---
+globs: *.kt
+---
+
+# Validation Rules
+
+## Input Validation Patterns
+Always validate requests before processing using sealed class patterns:
+
+```kotlin
+sealed class ValidationEvent {
+    object Success : ValidationEvent()
+    object ErrorFieldEmpty : ValidationEvent()
+    object ErrorInvalidFormat : ValidationEvent()
+    object ErrorInvalidEmail : ValidationEvent()
+    object ErrorInvalidPhone : ValidationEvent()
+    object ErrorInvalidSpecialization : ValidationEvent()
+    object ErrorPasswordTooShort : ValidationEvent()
+}
+```
+
+## Validation Implementation
+```kotlin
+when (service.validateRequest(request)) {
+    is Service.ValidationEvent.ErrorFieldEmpty -> {
+        call.respond(
+            HttpStatusCode.BadRequest,
+            BasicApiResponse<Unit>(
+                success = false,
+                message = "Field cannot be empty"
+            )
+        )
+        return@post
+    }
+    is Service.ValidationEvent.Success -> {
+        // Process request
+    }
+}
+```
+
+## Validation Rules
+- **Email**: Valid email format required
+- **Phone**: Valid phone number format required
+- **Password**: Minimum length requirements
+- **Specialization**: Must be valid enum value (UPPERCASE)
+- **Marital Status**: Must be valid enum value
+- **File uploads**: Validate file types and sizes
+
+## Key Files
+- [ValidationUtil.kt](mdc:src/main/kotlin/util/ValidationUtil.kt) - Contains validation utilities
+- Service classes in [src/main/kotlin/service/](mdc:src/main/kotlin/service/) - Implement validation logic

@@ -1,0 +1,55 @@
+---
+globs: *.kt,*.yaml,*.json
+---
+
+# Security Rules
+
+## Input Validation Security
+- Always validate input data before processing
+- Use parameterized queries for database operations
+- Implement proper CORS configuration
+- Validate JWT tokens on protected routes
+- Sanitize file uploads
+
+## File Upload Security
+```kotlin
+// Validate file types
+if (originalFileName != null && originalFileName.substringAfterLast(".", "")
+        .lowercase() in setOf("jpg", "jpeg", "png", "gif")) {
+    // Process file
+} else {
+    call.respond(
+        HttpStatusCode.BadRequest,
+        BasicApiResponse<Unit>(
+            success = false,
+            message = "Invalid image file type"
+        )
+    )
+}
+```
+
+## Data Protection
+- No hardcoded secrets or credentials
+- Use environment variables for sensitive configuration
+- No sensitive data in logs
+- PII (Personally Identifiable Information) must be protected
+- Medical information must be handled securely
+
+## Authentication Security
+- JWT tokens must be properly signed and validated
+- Token expiration must be appropriately configured
+- Refresh token mechanism must be secure
+- No sensitive data in JWT payload
+- Proper logout functionality implemented
+
+## Authorization Security
+- All protected endpoints must require authentication
+- Role-based access control must be properly implemented
+- Authorization checks must be performed on every request
+- No privilege escalation vulnerabilities
+- Proper use of route interceptors
+
+## Key Files
+- [Security.kt](mdc:src/main/kotlin/Security.kt) - Security configuration
+- [AuthInterceptor.kt](mdc:src/main/kotlin/auth/AuthInterceptor.kt) - Authentication logic
+- [application.yaml](mdc:src/main/resources/application.yaml) - Configuration

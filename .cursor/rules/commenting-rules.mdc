@@ -1,0 +1,45 @@
+---
+globs: *.kt
+---
+
+# Commenting Rules
+
+## NO Comments Policy
+- **NO comments allowed** except for actionable TODOs
+- Remove all debugging println statements
+- Follow clean code standards - code should be self-documenting
+- Only exception: `// TODO: [actionable item]` comments
+
+## Allowed Comments
+```kotlin
+// TODO: Add input validation for email field
+// TODO: Implement rate limiting for this endpoint
+// TODO: Add comprehensive error handling
+```
+
+## Forbidden Comments
+```kotlin
+// ❌ Wrong - Explanatory comment
+// This function validates user input
+
+// ❌ Wrong - Debugging comment
+// println("Debug: user ID is $userId")
+
+// ❌ Wrong - Obvious comment
+// Get user by ID
+val user = getUserById(id)
+```
+
+## Code Self-Documentation
+- Use descriptive variable and function names
+- Write small, focused functions
+- Use meaningful class and method names
+- Follow Kotlin naming conventions
+- Structure code logically
+
+## Clean Code Principles
+- Functions should do one thing well
+- Variable names should be descriptive
+- Code should be readable without comments
+- Complex logic should be broken into smaller functions
+- Use type-safe programming practices

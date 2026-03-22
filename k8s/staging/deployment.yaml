@@ -1,0 +1,97 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mom-care-platform-staging
+  namespace: staging
+  labels:
+    app: mom-care-platform
+    environment: staging
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: mom-care-platform
+      environment: staging
+  template:
+    metadata:
+      labels:
+        app: mom-care-platform
+        environment: staging
+    spec:
+      containers:
+      - name: mom-care-platform
+        image: mom-care-platform:staging
+        ports:
+        - containerPort: 8080
+        env:
+        - name: MONGODB_URI
+          value: "mongodb://mongodb-staging:27017/momcare"
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: mom-care-secrets
+              key: jwt-secret
+        - name: JWT_ISSUER
+          value: "https://staging.momcare.com"
+        - name: JWT_AUDIENCE
+          value: "momcare-api"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mom-care-platform-staging-service
+  namespace: staging
+spec:
+  selector:
+    app: mom-care-platform
+    environment: staging
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 8080
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mom-care-platform-staging-ingress
+  namespace: staging
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-staging"
+spec:
+  tls:
+  - hosts:
+    - staging.momcare.com
+    secretName: mom-care-platform-staging-tls
+  rules:
+  - host: staging.momcare.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: mom-care-platform-staging-service
+            port:
+              number: 80

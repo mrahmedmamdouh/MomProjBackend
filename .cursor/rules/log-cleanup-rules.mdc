@@ -1,0 +1,57 @@
+---
+alwaysApply: true
+---
+
+# Log Cleanup Rules
+
+## Automatic Log File Management
+- **Always clean up log files** after analysis
+- **Delete temporary files** immediately after use
+- **Never commit log files** to version control
+
+## Log File Patterns to Clean
+```bash
+# Test logs
+*.log
+test-results.log
+test_results_final.log
+comprehensive-test-results.log
+test-failures-analysis.log
+
+# Health check reports
+health-check-report-*.txt
+
+# Analysis files
+*-analysis.*
+*-report.*
+```
+
+## Cleanup Commands
+```bash
+# Clean all log files
+rm -f *.log
+
+# Clean health check reports
+rm -f health-check-report-*.txt
+
+# Clean analysis files
+rm -f *-analysis.* *-report.*
+```
+
+## Development Workflow
+1. **Run tests/health checks** as needed
+2. **Analyze results** from log files
+3. **Delete log files immediately** after analysis
+4. **Never commit** temporary files
+5. **Use .gitignore** to prevent accidental commits
+
+## File Management
+- Log files are **temporary by nature**
+- Keep only **essential documentation**
+- **Clean workspace** after each development session
+- **Monitor .gitignore** for new patterns
+
+## Key Files
+- [.gitignore](mdc:.gitignore) - Prevents log file commits
+- [health-check.sh](mdc:health-check.sh) - Generates temporary reports
+- Test scripts in [tests/](mdc:tests/) - Generate temporary logs

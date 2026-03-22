@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: momcare-api
+    runtime: docker
+    plan: free
+    region: frankfurt
+    healthCheckPath: /health
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_ISSUER
+        value: https://momcare-api.onrender.com
+      - key: JWT_AUDIENCE
+        value: momcare-api
+      - key: LIVEKIT_API_KEY
+        sync: false
+      - key: LIVEKIT_API_SECRET
+        sync: false
+      - key: LIVEKIT_URL
+        sync: false
+      - key: LIVEKIT_HTTP_URL
+        sync: false

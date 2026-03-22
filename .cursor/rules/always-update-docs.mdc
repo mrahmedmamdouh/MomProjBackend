@@ -1,0 +1,47 @@
+---
+alwaysApply: true
+---
+
+# Always Update Documentation
+
+## CRITICAL: Documentation Must Stay Current
+When making any code changes, you MUST update the corresponding documentation:
+
+## API Changes
+- **New endpoints** → Update [OpenAPI docs](mdc:src/main/resources/openapi/documentation.yaml)
+- **New endpoints** → Update [Postman collection](mdc:postman_collection.json)
+- **Authentication changes** → Update both OpenAPI and Postman
+- **Validation changes** → Update examples and error responses
+
+## Project Changes
+- **New file types** → Update Cursor rules with new glob patterns
+- **New workflows** → Update Cursor commands with new procedures
+- **Structure changes** → Update file references in rules
+- **Technology updates** → Update all relevant documentation
+
+## Documentation Files
+- [src/main/resources/openapi/documentation.yaml](mdc:src/main/resources/openapi/documentation.yaml) - API documentation
+- [postman_collection.json](mdc:postman_collection.json) - API testing collection
+- [.cursor/rules/](mdc:.cursor/rules) - Cursor rules directory
+- [.cursor/commands/](mdc:.cursor/commands/) - Cursor commands
+- [.cursor/instructions/](mdc:.cursor/instructions/) - Cursor instructions directory
+- [README.md](mdc:README.md) - Project overview
+
+## Update Commands
+Use these commands to keep documentation current:
+- **`update-documentation`** - Comprehensive documentation update
+- **`update-swagger-postman`** - Quick API documentation update
+- **`maintain-cursor-config`** - Cursor rules and commands maintenance
+
+## Validation
+Always validate documentation after updates:
+```bash
+# Validate OpenAPI
+python -c "import yaml; yaml.safe_load(open('src/main/resources/openapi/documentation.yaml'))"
+
+# Validate Postman
+python -c "import json; json.load(open('postman_collection.json'))"
+
+# Test Swagger UI
+curl -s http://localhost:8080/swagger | head -20
+```

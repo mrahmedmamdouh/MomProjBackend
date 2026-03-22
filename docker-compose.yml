@@ -1,0 +1,122 @@
+version: '3.8'
+
+services:
+  # Mom Care Platform Backend
+  mom-care-backend:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - MONGODB_URI=mongodb://mongodb:27017/momcare
+      - JWT_SECRET=your-jwt-secret-key
+      - JWT_ISSUER=https://momcare.com
+      - JWT_AUDIENCE=momcare-api
+      - LIVEKIT_API_KEY=devkey
+      - LIVEKIT_API_SECRET=aGVsbG93b3JsZGhlbGxvd29ybGRoZWxsb3dvcmxk
+      - LIVEKIT_URL=ws://livekit:7880
+      - LIVEKIT_HTTP_URL=http://livekit:7880
+    depends_on:
+      - mongodb
+      - redis
+      - livekit
+    networks:
+      - momcare-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password
+      - MONGO_INITDB_DATABASE=momcare
+    volumes:
+      - mongodb_data:/data/db
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - momcare-network
+    restart: unless-stopped
+
+  # Redis Cache
+  redis:
+    image: redis:7.2-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - momcare-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - mom-care-backend
+    networks:
+      - momcare-network
+    restart: unless-stopped
+
+  # Monitoring with Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - momcare-network
+    restart: unless-stopped
+
+  # Grafana Dashboard
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - momcare-network
+    restart: unless-stopped
+
+  # LiveKit Video Streaming Server (Apache 2.0)
+  livekit:
+    image: livekit/livekit-server:latest
+    ports:
+      - "7880:7880"
+      - "7881:7881"
+      - "7882:7882/udp"
+    environment:
+      - LIVEKIT_KEYS=devkey: aGVsbG93b3JsZGhlbGxvd29ybGRoZWxsb3dvcmxk
+    command: --dev --node-ip=0.0.0.0
+    networks:
+      - momcare-network
+    restart: unless-stopped
+
+volumes:
+  mongodb_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:
+
+networks:
+  momcare-network:
+    driver: bridge

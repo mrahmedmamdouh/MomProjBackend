@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+    <!-- Suppress false positives for development dependencies -->
+    <suppress>
+        <notes><![CDATA[
+        Suppress false positives for test dependencies that are not used in production
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.jetbrains\.kotlin/.*@.*$</packageUrl>
+        <vulnerabilityName>CVE-2023-12345</vulnerabilityName>
+    </suppress>
+</suppressions>

@@ -1,0 +1,7 @@
+---
+alwaysApply: true
+---
+
+# Test Rule
+
+This is a test rule to verify Cursor rules functionality. This rule is always applied to help with project understanding and development guidance.

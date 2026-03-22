@@ -1,0 +1,100 @@
+.gradle
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+### NetBeans ###
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+### VS Code ###
+.vscode/
+
+### macOS ###
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Ignore uploads directory (for file uploads)
+uploads/
+
+# Ignore test files
+test-files/
+
+# Ignore test results and log files
+test-results.log
+test_results_final.log
+comprehensive-test-results.log
+test-failures-analysis.log
+test-failures-analysis.md
+*.log
+
+# Ignore health check reports
+health-check-report-*.txt
+
+# Ignore analysis and temporary files
+*-analysis.*
+*-report.*
+
+# Ignore IDE and development files
+.kotlin/
+
+# CI/CD and deployment files
+.env
+.env.local
+.env.production
+.env.staging
+
+# SSL certificates and secrets
+ssl/
+*.pem
+*.key
+*.crt
+*.p12
+
+# Docker volumes and data
+docker-data/
+mongodb-data/
+redis-data/
+
+# Kubernetes secrets
+k8s/secrets/
+*.secret.yaml
+
+# Monitoring data
+prometheus-data/
+grafana-data/
+
+# Temporary deployment files
+deploy-temp/
+*.tmp
+*.temp

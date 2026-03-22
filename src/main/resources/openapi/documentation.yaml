@@ -1,0 +1,2809 @@
+openapi: 3.0.3
+info:
+  title: Mom Care Platform API
+  description: Mom Care Platform API - Production-ready backend with authentication, profile management, e-commerce, and admin operations. Uses Gson for JSON deserialization with enhanced validation.
+  version: 1.0.0
+  contact:
+    name: Mom Care Platform Support
+    email: support@momcare.com
+    url: https://momcare.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080
+    description: Development server
+  - url: https://api.momcare.com
+    description: Production server
+
+security:
+  - BearerAuth: [ ]
+
+tags:
+  - name: Health
+    description: Server health and status
+  - name: Authentication
+    description: User registration and login
+  - name: Categories
+    description: Product categories management
+  - name: File Upload
+    description: File management and serving
+  - name: Moms
+    description: Mom profile management
+  - name: Doctors
+    description: Doctor profile management
+  - name: Admin
+    description: Administrative operations
+  - name: Products
+    description: Product catalog management (requires mom authorization)
+  - name: SKU Offers
+    description: Product offers and pricing (requires mom authorization)
+  - name: Shopping Cart
+    description: Shopping cart operations (requires mom authorization)
+  - name: Orders
+    description: Order management operations (requires mom authorization)
+
+paths:
+  /:
+    get:
+      operationId: healthCheck
+      tags: [ Health ]
+      summary: Health check endpoint
+      description: Returns welcome message to verify server is running
+      security: [ ]
+      responses:
+        "200":
+          description: Server is running
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Mom Project API - Welcome!"
+
+  /health:
+    get:
+      operationId: getHealth
+      tags: [ Health ]
+      summary: Get service health status
+      description: Returns comprehensive health status including service info, timestamp, and environment
+      security: [ ]
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicApiResponse'
+              example:
+                success: true
+                data:
+                  status: "UP"
+                  timestamp: "2024-01-15T10:30:00Z"
+                  service: "Mom Care Platform Backend"
+                  version: "1.0.0"
+                  environment: "development"
+                message: "Service is healthy"
+
+  /health/ready:
+    get:
+      operationId: getReadiness
+      tags: [ Health ]
+      summary: Get service readiness status
+      description: Returns readiness status with database and external service checks
+      security: [ ]
+      responses:
+        "200":
+          description: Service is ready
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicApiResponse'
+              example:
+                success: true
+                data:
+                  status: "READY"
+                  timestamp: "2024-01-15T10:30:00Z"
+                  checks:
+                    database: "UP"
+                    cache: "UP"
+                    external_services: "UP"
+                message: "Service is ready"
+
+  /health/live:
+    get:
+      operationId: getLiveness
+      tags: [ Health ]
+      summary: Get service liveness status
+      description: Simple liveness check for container orchestration
+      security: [ ]
+      responses:
+        "200":
+          description: Service is alive
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BasicApiResponse'
+              example:
+                success: true
+                data:
+                  status: "ALIVE"
+                message: "Service is alive"
+
+  /uploads/{filename}:
+    get:
+      operationId: serveFile
+      tags: [ File Upload ]
+      summary: Serve uploaded files
+      description: Access uploaded files like photos and documents
+      security: [ ]
+      parameters:
+        - name: filename
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Name of the file to serve
+      responses:
+        "200":
+          description: File served successfully
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/gif:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: File not found
+
+  /api/auth/register/mom:
+    post:
+      operationId: registerMom
+      tags: [ Authentication ]
+      summary: Register new mom with file uploads
+      description: Register a new mom user with multipart form data including photos and NID documents. Returns same response format as login for consistency.
+      security: [ ]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: string
+                  description: JSON string containing registration data
+                  example: '{"email":"jane.doe@example.com","password":"securepassword123","fullName":"Jane Doe","phone":"+1-555-1234","maritalStatus":"MARRIED"}'
+                photo:
+                  type: string
+                  format: binary
+                  description: Profile photo file (required)
+                nidFront:
+                  type: string
+                  format: binary
+                  description: National ID front image (required)
+                nidBack:
+                  type: string
+                  format: binary
+                  description: National ID back image (required)
+              required:
+                - data
+                - photo
+                - nidFront
+                - nidBack
+              examples:
+                completeRegistration:
+                  summary: Complete mom registration with all fields
+                  description: Example of a complete mom registration with all required fields
+                  value:
+                    data: '{"email":"jane.doe@example.com","password":"securepassword123","fullName":"Jane Doe","phone":"+1-555-1234","maritalStatus":"MARRIED"}'
+                    photo: "[Binary file: profile_photo.jpg]"
+                    nidFront: "[Binary file: nid_front.jpg]"
+                    nidBack: "[Binary file: nid_back.jpg]"
+                minimalRegistration:
+                  summary: Minimal mom registration
+                  description: Example with minimal required fields
+                  value:
+                    data: '{"email":"alice.smith@example.com","password":"password123","fullName":"Alice Smith","phone":"+1-555-9876","maritalStatus":"SINGLE"}'
+                    photo: "[Binary file: profile_photo.png]"
+                    nidFront: "[Binary file: nid_front.png]"
+                    nidBack: "[Binary file: nid_back.png]"
+      responses:
+        "200":
+          description: Registration successful - returns same response format as login
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistrationResponse"
+        "400":
+          description: Invalid request data or validation errors
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+              examples:
+                invalidEmail:
+                  summary: Invalid email format
+                  value:
+                    success: false
+                    message: "Invalid email format"
+                invalidPassword:
+                  summary: Password too short
+                  value:
+                    success: false
+                    message: "Password must be at least 6 characters long"
+                invalidPhone:
+                  summary: Invalid phone format
+                  value:
+                    success: false
+                    message: "Invalid phone number format. Please use a valid phone number."
+                invalidMaritalStatus:
+                  summary: Invalid marital status
+                  value:
+                    success: false
+                    message: "Invalid marital status. Must be one of: SINGLE, MARRIED, DIVORCED, WIDOWED"
+                fieldsBlank:
+                  summary: Missing required fields
+                  value:
+                    success: false
+                    message: "All required fields must be provided"
+        "409":
+          description: Email already exists
+
+  /api/auth/register/doctor:
+    post:
+      operationId: registerDoctor
+      tags: [ Authentication ]
+      summary: Register new doctor with file uploads
+      description: Register a new doctor user with multipart form data including photos and NID documents. Returns same response format as login for consistency.
+      security: [ ]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: string
+                  description: JSON string containing registration data
+                  example: '{"email":"dr.smith@example.com","password":"securepassword123","name":"Dr. John Smith","phone":"+1-555-5678","specialization":"PSYCHIATRIST"}'
+                photo:
+                  type: string
+                  format: binary
+                  description: Profile photo file (required)
+                nidFront:
+                  type: string
+                  format: binary
+                  description: National ID front image (required)
+                nidBack:
+                  type: string
+                  format: binary
+                  description: National ID back image (required)
+              required:
+                - data
+                - photo
+                - nidFront
+                - nidBack
+              examples:
+                completeDoctorRegistration:
+                  summary: Complete doctor registration with all fields
+                  description: Example of a complete doctor registration with all required fields
+                  value:
+                    data: '{"email":"dr.smith@example.com","password":"securepassword123","name":"Dr. John Smith","phone":"+1-555-5678","specialization":"PSYCHIATRIST"}'
+                    photo: "[Binary file: doctor_photo.jpg]"
+                    nidFront: "[Binary file: doctor_nid_front.jpg]"
+                    nidBack: "[Binary file: doctor_nid_back.jpg]"
+                cardiologistRegistration:
+                  summary: Cardiologist registration example
+                  description: Example registration for a cardiologist
+                  value:
+                    data: '{"email":"dr.jones@example.com","password":"password123","name":"Dr. Sarah Jones","phone":"+1-555-2468","specialization":"FAMILY_THERAPIST"}'
+                    photo: "[Binary file: cardiologist_photo.png]"
+                    nidFront: "[Binary file: cardiologist_nid_front.png]"
+                    nidBack: "[Binary file: cardiologist_nid_back.png]"
+      responses:
+        "200":
+          description: Registration successful - returns same response format as login
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegistrationResponse"
+        "400":
+          description: Invalid request data or validation errors
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+              examples:
+                invalidEmail:
+                  summary: Invalid email format
+                  value:
+                    success: false
+                    message: "Invalid email format"
+                invalidPassword:
+                  summary: Password too short
+                  value:
+                    success: false
+                    message: "Password must be at least 6 characters long"
+                invalidPhone:
+                  summary: Invalid phone format
+                  value:
+                    success: false
+                    message: "Invalid phone number format. Please use a valid phone number."
+                invalidSpecialization:
+                  summary: Invalid specialization
+                  value:
+                    success: false
+                    message: "Invalid specialization. Must be one of: PSYCHIATRIST, CLINICAL_PSYCHOLOGIST, COUNSELING_PSYCHOLOGIST, PERINATAL_MENTAL_HEALTH, FAMILY_THERAPIST, TRAUMA_THERAPIST, COGNITIVE_BEHAVIORAL_THERAPIST, GROUP_THERAPIST"
+                fieldsBlank:
+                  summary: Missing required fields
+                  value:
+                    success: false
+                    message: "All required fields must be provided"
+        "409":
+          description: Email already exists
+
+  /api/auth/login:
+    post:
+      operationId: login
+      tags: [ Authentication ]
+      summary: Universal login for all user types
+      description: Login endpoint for both Moms and Doctors, returns JWT token with refresh token
+      security: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Login response
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/LoginSuccessResponse"
+                  - $ref: "#/components/schemas/LoginErrorResponse"
+
+  /api/auth/refresh:
+    post:
+      operationId: refreshToken
+      tags: [ Authentication ]
+      summary: Refresh access token
+      description: Use refresh token to get a new access token. Access tokens expire in 30 minutes, refresh tokens expire in 30 days with 24-hour idle timeout.
+      security: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshTokenRequest"
+      responses:
+        "200":
+          description: Token refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginSuccessResponse"
+        "400":
+          description: Invalid request format
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicApiResponse"
+              example:
+                success: false
+                message: "Invalid request format"
+        "401":
+          description: Refresh token invalid, expired, or idle timeout exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicApiResponse"
+              example:
+                success: false
+                message: "Refresh token is invalid, expired, or idle timeout exceeded. Please login again."
+
+  /api/auth/logout:
+    post:
+      operationId: logout
+      tags: [ Authentication ]
+      summary: Logout user
+      description: Revoke refresh token to logout user from all devices
+      security: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshTokenRequest"
+      responses:
+        "200":
+          description: Logout response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicApiResponse"
+              examples:
+                success:
+                  summary: Logout successful
+                  value:
+                    success: true
+                    message: "Logged out successfully"
+                failure:
+                  summary: Logout failed
+                  value:
+                    success: false
+                    message: "Logout failed"
+        "400":
+          description: Invalid request format
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicApiResponse"
+              example:
+                success: false
+                message: "Invalid request format"
+
+  /api/categories:
+    get:
+      operationId: getAllCategories
+      tags: [ Categories ]
+      summary: Get all categories (Public)
+      description: Retrieve all product categories - public access for browsing
+      security: [ ]
+      responses:
+        "200":
+          description: Categories retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryListResponse"
+
+  /api/categories/{id}:
+    get:
+      operationId: getCategoryById
+      tags: [ Categories ]
+      summary: Get category by ID (Public)
+      description: Retrieve a specific category by its ID - public access for browsing
+      security: [ ]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Category ID
+      responses:
+        "200":
+          description: Category retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryResponse"
+        "404":
+          description: Category not found
+
+  /api/moms/profile:
+    get:
+      operationId: getMomProfile
+      tags: [ Moms ]
+      summary: Get mom profile
+      description: Get current mom's profile (requires authentication)
+      responses:
+        "200":
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MomProfileResponse"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Profile not found
+    put:
+      operationId: updateMomProfile
+      tags: [ Moms ]
+      summary: Update mom profile
+      description: Update mom profile with optional photo upload (requires authentication)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMomProfileRequest"
+            examples:
+              updateNameAndPhone:
+                summary: Update name and phone
+                description: Example of updating mom's name and phone number
+                value:
+                  fullName: "Alice Johnson Updated"
+                  phone: "+1-555-9999"
+                  maritalStatus: "DIVORCED"
+              updateMaritalStatus:
+                summary: Update marital status only
+                description: Example of updating only the marital status
+                value:
+                  maritalStatus: "MARRIED"
+              completeUpdate:
+                summary: Complete profile update
+                description: Example of updating all available fields
+                value:
+                  fullName: "Alice Smith"
+                  phone: "+1-555-1234"
+                  maritalStatus: "SINGLE"
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: string
+                  description: JSON string containing profile data (all fields optional)
+                  example: '{"fullName":"Alice Johnson","phone":"+1234567890","maritalStatus":"MARRIED","photo":"updated_photo.jpg"}'
+                photo:
+                  type: string
+                  format: binary
+                  description: Profile photo file (optional)
+              required:
+                - data
+              examples:
+                updateWithPhoto:
+                  summary: Update mom profile with new photo
+                  description: Example of updating mom profile with a new profile photo
+                  value:
+                    data: '{"fullName":"Alice Johnson","phone":"+1234567890","maritalStatus":"MARRIED","photo":"updated_photo.jpg"}'
+                    photo: "[Binary file data]"
+                updatePartialData:
+                  summary: Update mom profile with partial data
+                  description: Example of updating only specific fields (all fields are optional)
+                  value:
+                    data: '{"fullName":"Alice Smith"}'
+                updateWithPhoneOnly:
+                  summary: Update mom profile phone only
+                  description: Example of updating only the phone number
+                  value:
+                    data: '{"phone":"+1-555-1234"}'
+                updateWithoutPhoto:
+                  summary: Update mom profile without photo
+                  description: Example of updating mom profile data without changing photo
+                  value:
+                    data: '{"fullName":"Alice Johnson","phone":"+1-555-8888","maritalStatus":"MARRIED","photo":"existing_photo.jpg"}'
+                    photo: "[Binary file: existing_photo.jpg]"
+                minimalUpdate:
+                  summary: Minimal profile update
+                  description: Example of updating only the name
+                  value:
+                    data: '{"fullName":"Alice Smith","phone":"+1-555-1234","maritalStatus":"MARRIED","photo":"current_photo.jpg"}'
+                    photo: "[Binary file: current_photo.jpg]"
+                photo:
+                  type: string
+                  format: binary
+                  description: Optional profile photo
+      responses:
+        "200":
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicApiResponse"
+        "400":
+          description: Invalid request data
+        "401":
+          description: Unauthorized
+
+  /api/moms/sessions:
+    put:
+      operationId: updateMomSessions
+      tags: [ Moms ]
+      summary: Update mom sessions
+      description: Update mom's session count (requires authentication). The numberOfSessions field is required - requests without this field will be rejected with 400 Bad Request to prevent accidental session resets.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSessionsRequest"
+            examples:
+              increaseSessions:
+                summary: Increase session count
+                description: Example of increasing mom's session count
+                value:
+                  numberOfSessions: 15
+              authorizeMom:
+                summary: Authorize mom for e-commerce
+                description: Example of setting sessions to authorize mom for e-commerce access
+                value:
+                  numberOfSessions: 8
+              resetSessions:
+                summary: Reset session count
+                description: Example of resetting session count to zero
+                value:
+                  numberOfSessions: 0
+              malformedRequest:
+                summary: Malformed request (will be rejected)
+                description: Example of a malformed request that will be rejected with 400 Bad Request
+                value: {}
+      responses:
+        "200":
+          description: Sessions updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicApiResponse"
+        "400":
+          description: Invalid request data
+        "401":
+          description: Unauthorized
+
+  /api/moms/check-authorization:
+    get:
+      operationId: checkMomAuthorization
+      tags: [ Moms ]
+      summary: Check mom authorization status
+      description: Get current mom's authorization status and session count. Accessible to both authorized and unauthorized moms (requires mom authentication)
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Authorization status retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BasicApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          isAuthorized:
+                            type: boolean
+                            example: true
+                            description: Whether mom has completed enough sessions for e-commerce access
+                          momId:
+                            type: string
+                            example: "mom_jane"
+              examples:
+                authorized_mom:
+                  summary: Authorized mom response
+                  value:
+                    success: true
+                    data:
+                      isAuthorized: true
+                      momId: "mom_jane"
+                unauthorized_mom:
+                  summary: Unauthorized mom response
+                  value:
+                    success: true
+                    data:
+                      isAuthorized: false
+                      momId: "mom_alice"
+        "401":
+          description: Unauthorized - requires mom authentication
+
+  /api/doctors/check-authorization:
+    get:
+      operationId: checkDoctorAuthorization
+      tags: [ Doctors ]
+      summary: Check doctor authorization status
+      description: Get current doctor's authorization status. Accessible to both authorized and unauthorized doctors (requires doctor authentication)
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Authorization status retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BasicApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          isAuthorized:
+                            type: boolean
+                            example: true
+                            description: Whether doctor has been authorized by admin
+                          doctorId:
+                            type: string
+                            example: "doctor_john"
+              examples:
+                authorized_doctor:
+                  summary: Authorized doctor response
+                  value:
+                    success: true
+                    data:
+                      isAuthorized: true
+                      doctorId: "doctor_john"
+                unauthorized_doctor:
+                  summary: Unauthorized doctor response
+                  value:
+                    success: true
+                    data:
+                      isAuthorized: false
+                      doctorId: "doctor_brown"
+        "401":
+          description: Unauthorized - requires doctor authentication
+
+  /api/doctors/profile:
+    get:
+      operationId: getDoctorProfile
+      tags: [ Doctors ]
+      summary: Get doctor profile
+      description: Get current doctor's profile (requires authentication)
+      responses:
+        "200":
+          description: Profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DoctorProfileResponse"
+        "401":
+          description: Unauthorized
+        "404":
+          description: Profile not found
+    put:
+      operationId: updateDoctorProfile
+      tags: [ Doctors ]
+      summary: Update doctor profile
+      description: "Update doctor profile with optional photo upload (requires authentication). Uses Gson for JSON deserialization."
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateDoctorProfileRequest"
+            examples:
+              updateNameAndPhone:
+                summary: Update name and phone
+                description: Example of updating doctor's name and phone number
+                value:
+                  name: "Dr. John Smith Updated"
+                  phone: "+1-555-8888"
+                  specialization: "FAMILY_THERAPIST"
+              updateSpecialization:
+                summary: Update specialization only
+                description: Example of updating only the specialization
+                value:
+                  specialization: "CLINICAL_PSYCHOLOGIST"
+              completeUpdate:
+                summary: Complete profile update
+                description: Example of updating all available fields
+                value:
+                  name: "Dr. Sarah Jones"
+                  phone: "+1-555-2468"
+                  specialization: "PSYCHIATRIST"
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: string
+                  description: JSON string containing profile data (all fields optional) - uses Gson for lenient parsing
+                  example: '{"name":"Dr. John Smith","phone":"+1234567890","specialization":"PSYCHIATRIST","photo":"updated_photo.jpg"}'
+                photo:
+                  type: string
+                  format: binary
+                  description: Profile photo file (optional)
+              required:
+                - data
+              examples:
+                updateWithPhoto:
+                  summary: Update doctor profile with new photo
+                  description: Example of updating doctor profile with a new profile photo
+                  value:
+                    data: '{"name":"Dr. John Smith","phone":"+1234567890","specialization":"PSYCHIATRIST","photo":"updated_photo.jpg"}'
+                    photo: "[Binary file data]"
+                updatePartialData:
+                  summary: Update doctor profile with partial data
+                  description: Example of updating only specific fields (all fields are optional)
+                  value:
+                    data: '{"name":"Dr. Sarah Jones"}'
+                updateSpecializationOnly:
+                  summary: Update doctor specialization only
+                  description: Example of updating only the specialization
+                  value:
+                    data: '{"specialization":"CLINICAL_PSYCHOLOGIST"}'
+                updateWithoutPhoto:
+                  summary: Update doctor profile without photo
+                  description: Example of updating doctor profile data without changing photo
+                  value:
+                    data: '{"name":"Dr. John Smith","phone":"+1-555-8888","specialization":"FAMILY_THERAPIST","photo":"existing_photo.jpg"}'
+      responses:
+        "200":
+          description: Profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DoctorProfileResponse"
+              examples:
+                success:
+                  summary: Profile updated successfully
+                  value:
+                    success: true
+                    data:
+                      id: "doc_brown"
+                      name: "Dr. John Smith Updated"
+                      email: "dr.brown@example.com"
+                      phone: "+1-555-8888"
+                      specialization: "FAMILY_THERAPIST"
+                      photo: "uploads/doctor_photo.jpg"
+        "400":
+          description: Invalid request data or validation errors
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidationErrorResponse"
+              examples:
+                invalidSpecialization:
+                  summary: Invalid specialization
+                  value:
+                    success: false
+                    message: "Invalid specialization"
+                invalidPhone:
+                  summary: Invalid phone format
+                  value:
+                    success: false
+                    message: "Invalid phone number format"
+                emptyName:
+                  summary: Empty name
+                  value:
+                    success: false
+                    message: "Name cannot be empty"
+                malformedJson:
+                  summary: Malformed JSON
+                  value:
+                    success: false
+                    message: "Invalid request data. Please check that all required fields are provided and properly formatted."
+        "401":
+          description: Unauthorized
+        "404":
+          description: Profile not found
+
+  /api/products:
+    get:
+      operationId: getAllProducts
+      tags: [ Products ]
+      summary: Get all products (Authorized Moms only)
+      description: "Get paginated list of all products - requires mom authentication AND authorization (isAuthorized: true). Moms with insufficient sessions (<4) will receive 403 Forbidden."
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: Page number (0-based)
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+          description: Page size
+      responses:
+        "200":
+          description: Products retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductListResponse"
+        "401":
+          description: Unauthorized - requires mom authentication
+        "403":
+          description: Access denied - Mom must be authorized to access products
+
+  /api/products/{id}:
+    get:
+      operationId: getProductById
+      tags: [ Products ]
+      summary: Get product by ID (Moms only)
+      description: Get specific product details by ID - requires mom authentication and authorization
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Product ID
+      responses:
+        "200":
+          description: Product retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductResponse"
+        "401":
+          description: Unauthorized - requires mom authentication
+        "403":
+          description: Access denied - Mom must be authorized to access products
+        "404":
+          description: Product not found
+
+  /api/products/category/{categoryId}:
+    get:
+      operationId: getProductsByCategory
+      tags: [ Products ]
+      summary: Get products by category (Moms only)
+      description: Get paginated list of products by category - requires mom authentication and authorization
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: categoryId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Category ID
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: Page number (0-based)
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+          description: Page size
+      responses:
+        "200":
+          description: Products retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductListResponse"
+        "401":
+          description: Unauthorized - requires mom authentication
+        "403":
+          description: Access denied - Mom must be authorized to access products
+        "404":
+          description: Category not found
+
+  /api/products/search:
+    get:
+      operationId: searchProducts
+      tags: [ Products ]
+      summary: Search products (Moms only)
+      description: Search products by name with pagination - requires mom authentication and authorization
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: query
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Search query
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: Page number (0-based)
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+          description: Page size
+      responses:
+        "200":
+          description: Products retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductListResponse"
+        "401":
+          description: Unauthorized - requires mom authentication
+        "403":
+          description: Access denied - Mom must be authorized to access products
+
+  /api/sku-offers:
+    get:
+      operationId: getAllSkuOffers
+      tags: [ SKU Offers ]
+      summary: Get all SKU offers (Moms only)
+      description: Get all active SKU offers - requires mom authentication and authorization
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: SKU offers retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkuOfferListResponse"
+        "401":
+          description: Unauthorized - requires mom authentication
+
+  /api/sku-offers/{id}:
+    get:
+      operationId: getSkuOfferById
+      tags: [ SKU Offers ]
+      summary: Get SKU offer by ID (Moms only)
+      description: Get specific SKU offer by ID - requires mom authentication and authorization
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: SKU offer ID
+      responses:
+        "200":
+          description: SKU offer retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkuOfferResponse"
+        "401":
+          description: Unauthorized - requires mom authentication
+        "403":
+          description: Access denied - Mom must be authorized to access SKU offers
+        "404":
+          description: SKU offer not found
+
+  /api/sku-offers/sku/{skuId}:
+    get:
+      operationId: getSkuOffersBySkuId
+      tags: [ SKU Offers ]
+      summary: Get SKU offers by SKU ID (Moms only)
+      description: Get all offers for a specific SKU - requires mom authentication and authorization
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: skuId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: SKU ID
+      responses:
+        "200":
+          description: SKU offers retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkuOfferListResponse"
+        "401":
+          description: Unauthorized - requires mom authentication
+        "403":
+          description: Access denied - Mom must be authorized to access SKU offers
+
+  /api/sku-offers/seller/{sellerId}:
+    get:
+      operationId: getSkuOffersBySellerId
+      tags: [ SKU Offers ]
+      summary: Get SKU offers by seller ID (Moms only)
+      description: Get all offers from a specific seller - requires mom authentication and authorization
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: sellerId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Seller ID
+      responses:
+        "200":
+          description: SKU offers retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkuOfferListResponse"
+        "401":
+          description: Unauthorized - requires mom authentication
+        "403":
+          description: Access denied - Mom must be authorized to access SKU offers
+
+  /api/sku-offers/sku/{skuId}/best:
+    get:
+      operationId: getBestSkuOffer
+      tags: [ SKU Offers ]
+      summary: Get best SKU offer (Moms only)
+      description: Get the best (lowest price) offer for a specific SKU - requires mom authentication and authorization
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: skuId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: SKU ID
+      responses:
+        "200":
+          description: Best SKU offer retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkuOfferResponse"
+        "401":
+          description: Unauthorized - requires mom authentication
+        "403":
+          description: Access denied - Mom must be authorized to access SKU offers
+        "404":
+          description: No offers found for SKU
+
+  /api/cart:
+    get:
+      operationId: getCart
+      tags: [ Shopping Cart ]
+      summary: Get shopping cart (Moms only)
+      description: Get current user's shopping cart - requires mom authentication and authorization
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Cart retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CartResponse"
+        "401":
+          description: Unauthorized - requires mom authentication
+        "403":
+          description: Access denied - Mom must be authorized to access cart features
+    delete:
+      operationId: clearCart
+      tags: [ Shopping Cart ]
+      summary: Clear shopping cart (Moms only)
+      description: Clear all items from the shopping cart - requires mom authentication and authorization
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Cart cleared successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicApiResponse"
+        "401":
+          description: Unauthorized - requires mom authentication
+        "403":
+          description: Access denied - Mom must be authorized to access cart features
+
+  /api/cart/add:
+    post:
+      operationId: addToCart
+      tags: [ Shopping Cart ]
+      summary: Add item to cart (Moms only)
+      description: Add an item to the shopping cart - requires mom authentication and authorization
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddToCartRequest"
+      responses:
+        "200":
+          description: Item added to cart successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicApiResponse"
+        "400":
+          description: Invalid request data
+        "401":
+          description: Unauthorized - requires mom authentication
+        "403":
+          description: Access denied - Mom must be authorized to access cart features
+
+  /api/cart/item/{skuId}:
+    put:
+      operationId: updateCartItem
+      tags: [ Shopping Cart ]
+      summary: Update cart item quantity (Moms only)
+      description: Update the quantity of an item in the cart - requires mom authentication and authorization
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: skuId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: SKU ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCartItemRequest"
+      responses:
+        "200":
+          description: Cart item updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicApiResponse"
+        "400":
+          description: Invalid request data
+        "401":
+          description: Unauthorized - requires mom authentication
+        "403":
+          description: Access denied - Mom must be authorized to access cart features
+        "404":
+          description: Item not found in cart
+    delete:
+      operationId: removeCartItem
+      tags: [ Shopping Cart ]
+      summary: Remove cart item (Moms only)
+      description: Remove an item from the shopping cart - requires mom authentication and authorization
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: skuId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: SKU ID
+      responses:
+        "200":
+          description: Item removed from cart successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicApiResponse"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Access denied - Mom must be authorized to access cart features
+        "404":
+          description: Item not found in cart
+
+  /api/admin/doctors/{doctorId}/authorize:
+    put:
+      operationId: updateDoctorAuthorization
+      tags: [ Admin ]
+      summary: Update doctor authorization status
+      description: Update a doctor's authorization status (requires admin authentication)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: doctorId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Doctor ID to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthorizationRequest"
+      responses:
+        "200":
+          description: Doctor authorization updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicApiResponse"
+              examples:
+                authorized:
+                  summary: Doctor authorized
+                  value:
+                    success: true
+                    message: "Doctor authorized"
+                revoked:
+                  summary: Doctor access revoked
+                  value:
+                    success: true
+                    message: "Doctor access revoked"
+        "400":
+          description: Invalid request data
+        "401":
+          description: Unauthorized - requires admin authentication
+        "404":
+          description: Doctor not found or update failed
+
+  /api/admin/doctors/{doctorId}/status:
+    get:
+      operationId: getDoctorAuthorizationStatus
+      tags: [ Admin ]
+      summary: Get doctor authorization status
+      description: Get a doctor's current authorization status (requires admin authentication)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: doctorId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Doctor ID to check
+      responses:
+        "200":
+          description: Doctor authorization status retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BasicApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          isAuthorized:
+                            type: boolean
+                            example: true
+        "400":
+          description: Invalid request - Doctor ID is required
+        "401":
+          description: Unauthorized - requires admin authentication
+        "404":
+          description: Doctor not found
+
+  /api/admin/moms/{momId}/sessions:
+    get:
+      operationId: getMomSessionData
+      tags: [ Admin ]
+      summary: Get mom session data (Admin only)
+      description: Get mom's session count and authorization status for administrative monitoring (requires admin authentication)
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: momId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Mom ID to retrieve session data for
+      responses:
+        "200":
+          description: Mom session data retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BasicApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          momId:
+                            type: string
+                            example: "mom_jane"
+                            description: Mom's unique identifier
+                          sessionCount:
+                            type: integer
+                            example: 10
+                            description: Current number of sessions attended
+                          lastActive:
+                            type: integer
+                            example: 1640995200000
+                            description: Last activity timestamp
+                          isAuthorized:
+                            type: boolean
+                            example: true
+                            description: Whether mom is authorized for e-commerce access
+              examples:
+                authorized_mom:
+                  summary: Authorized mom session data
+                  value:
+                    success: true
+                    data:
+                      momId: "mom_jane"
+                      sessionCount: 10
+                      lastActive: 1640995200000
+                      isAuthorized: true
+                unauthorized_mom:
+                  summary: Unauthorized mom session data
+                  value:
+                    success: true
+                    data:
+                      momId: "mom_alice"
+                      sessionCount: 3
+                      lastActive: 1640995200000
+                      isAuthorized: false
+        "400":
+          description: Invalid request - Mom ID is required
+        "401":
+          description: Unauthorized - requires admin authentication
+        "404":
+          description: Mom not found
+
+  /api/admin/products:
+    post:
+      operationId: createProduct
+      tags: [ Admin ]
+      summary: Create product (Admin only)
+      description: Create a new product - requires admin authentication
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateProductRequest"
+      responses:
+        "200":
+          description: Product created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicApiResponse"
+        "400":
+          description: Invalid request data
+        "401":
+          description: Unauthorized - requires admin authentication
+
+  /api/admin/products/{id}:
+    put:
+      operationId: updateProduct
+      tags: [ Admin ]
+      summary: Update product (Admin only)
+      description: Update an existing product - requires admin authentication
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Product ID to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProductRequest"
+      responses:
+        "200":
+          description: Product updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicApiResponse"
+        "400":
+          description: Invalid request data
+        "401":
+          description: Unauthorized - requires admin authentication
+        "404":
+          description: Product not found
+
+    delete:
+      operationId: deleteProduct
+      tags: [ Admin ]
+      summary: Delete product (Admin only)
+      description: Delete a product - requires admin authentication
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Product ID to delete
+      responses:
+        "200":
+          description: Product deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicApiResponse"
+        "401":
+          description: Unauthorized - requires admin authentication
+        "404":
+          description: Product not found
+
+  /api/admin/categories:
+    post:
+      operationId: createCategory
+      tags: [ Admin ]
+      summary: Create category (Admin only)
+      description: Create a new category - requires admin authentication
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCategoryRequest"
+      responses:
+        "201":
+          description: Category created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BasicApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/Category"
+        "400":
+          description: Invalid request data
+        "401":
+          description: Unauthorized - requires admin authentication
+
+  /api/admin/categories/{id}:
+    put:
+      operationId: updateCategory
+      tags: [ Admin ]
+      summary: Update category (Admin only)
+      description: Update an existing category - requires admin authentication
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Category ID to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCategoryRequest"
+      responses:
+        "200":
+          description: Category updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicApiResponse"
+        "400":
+          description: Invalid request data
+        "401":
+          description: Unauthorized - requires admin authentication
+        "404":
+          description: Category not found
+
+    delete:
+      operationId: deleteCategory
+      tags: [ Admin ]
+      summary: Delete category (Admin only)
+      description: Delete a category - requires admin authentication
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Category ID to delete
+      responses:
+        "200":
+          description: Category deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicApiResponse"
+        "401":
+          description: Unauthorized - requires admin authentication
+        "404":
+          description: Category not found
+
+  /api/admin/sku-offers:
+    post:
+      operationId: createSkuOffer
+      tags: [ Admin ]
+      summary: Create SKU offer (Admin only)
+      description: Create a new SKU offer - requires admin authentication
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSkuOfferRequest"
+      responses:
+        "200":
+          description: SKU offer created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicApiResponse"
+        "400":
+          description: Invalid request data
+        "401":
+          description: Unauthorized - requires admin authentication
+
+  /api/admin/sku-offers/{id}:
+    put:
+      operationId: updateSkuOffer
+      tags: [ Admin ]
+      summary: Update SKU offer (Admin only)
+      description: Update an existing SKU offer - requires admin authentication
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: SKU offer ID to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSkuOfferRequest"
+      responses:
+        "200":
+          description: SKU offer updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicApiResponse"
+        "400":
+          description: Invalid request data
+        "401":
+          description: Unauthorized - requires admin authentication
+        "404":
+          description: SKU offer not found
+
+    delete:
+      operationId: deleteSkuOffer
+      tags: [ Admin ]
+      summary: Delete SKU offer (Admin only)
+      description: Delete a SKU offer - requires admin authentication
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: SKU offer ID to delete
+      responses:
+        "200":
+          description: SKU offer deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicApiResponse"
+        "401":
+          description: Unauthorized - requires admin authentication
+        "404":
+          description: SKU offer not found
+
+  /api/orders:
+    get:
+      operationId: getOrders
+      tags: [ Orders ]
+      summary: Get user's order history (Moms only)
+      description: Get paginated list of user's orders - requires mom authentication and authorization
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 0
+          description: Page number (0-based)
+        - name: size
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 20
+          description: Page size
+      responses:
+        "200":
+          description: Orders retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BasicApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/OrderResponse"
+        "401":
+          description: Unauthorized - requires mom authentication
+        "403":
+          description: Access denied - Mom must be authorized to access orders
+
+    post:
+      operationId: createOrder
+      tags: [ Orders ]
+      summary: Create order from request items (Moms only)
+      description: Create a new order from provided items - requires mom authentication and authorization
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderRequest"
+      responses:
+        "201":
+          description: Order created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BasicApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/OrderResponse"
+        "400":
+          description: Invalid request data or validation errors
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicApiResponse"
+        "401":
+          description: Unauthorized - requires mom authentication
+        "403":
+          description: Access denied - Mom must be authorized to create orders
+
+  /api/orders/from-cart:
+    post:
+      operationId: createOrderFromCart
+      tags: [ Orders ]
+      summary: Create order from cart (Moms only)
+      description: Create a new order from items in user's cart - requires mom authentication and authorization
+      security:
+        - BearerAuth: []
+      responses:
+        "201":
+          description: Order created successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BasicApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/OrderResponse"
+        "400":
+          description: Cart is empty or invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicApiResponse"
+        "401":
+          description: Unauthorized - requires mom authentication
+        "403":
+          description: Access denied - Mom must be authorized to create orders
+
+  /api/orders/{id}:
+    get:
+      operationId: getOrderById
+      tags: [ Orders ]
+      summary: Get specific order (Moms only)
+      description: Get details of a specific order by ID - requires mom authentication and authorization
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Order ID
+      responses:
+        "200":
+          description: Order retrieved successfully
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: "#/components/schemas/BasicApiResponse"
+                  - type: object
+                    properties:
+                      data:
+                        $ref: "#/components/schemas/OrderResponse"
+        "401":
+          description: Unauthorized - requires mom authentication
+        "403":
+          description: Access denied - Mom must be authorized to access orders
+        "404":
+          description: Order not found
+
+  /api/orders/{id}/status:
+    put:
+      operationId: updateOrderStatus
+      tags: [ Orders ]
+      summary: Update order status (Moms only)
+      description: Update the status of a specific order - requires mom authentication and authorization
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Order ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateOrderStatusRequest"
+      responses:
+        "200":
+          description: Order status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicApiResponse"
+        "400":
+          description: Invalid status or validation errors
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BasicApiResponse"
+        "401":
+          description: Unauthorized - requires mom authentication
+        "403":
+          description: Access denied - Mom must be authorized to update orders
+        "404":
+          description: Order not found
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from login endpoint
+
+  schemas:
+    BasicApiResponse:
+      type: object
+      description: Standard API response format
+      properties:
+        success:
+          type: boolean
+          description: Request success status
+          example: true
+        message:
+          type: string
+          description: Response message
+          example: "Operation completed successfully"
+        data:
+          type: object
+          description: Response data (varies by endpoint)
+      required: [ success ]
+
+    LoginRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          example: "alice@example.com"
+        password:
+          type: string
+          format: password
+          example: "password123"
+      required: [ email, password ]
+
+    LoginSuccessResponse:
+      allOf:
+        - $ref: "#/components/schemas/BasicApiResponse"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                userId:
+                  type: string
+                  example: "mom_alice"
+                  description: "Unique identifier for the authenticated user"
+                token:
+                  type: string
+                  example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  description: "JWT access token for authentication (expires in 30 minutes)"
+                refreshToken:
+                  type: string
+                  example: "MJCvRLCw7vw_lo2PU3KCN4zrHB1BfT_X86SW63zLWuk"
+                  description: "Refresh token for obtaining new access tokens (expires in 30 days with 24-hour idle timeout)"
+                userType:
+                  type: string
+                  enum: [ MOM, DOCTOR ]
+                  example: "MOM"
+                  description: "Type of authenticated user"
+                expiresIn:
+                  type: integer
+                  example: 1800
+                  description: "Access token expiration time in seconds (30 minutes)"
+                refreshExpiresIn:
+                  type: integer
+                  example: 2592000
+                  description: "Refresh token expiration time in seconds (30 days)"
+              required: [ userId, token, refreshToken, userType, expiresIn, refreshExpiresIn ]
+          example:
+            success: true
+            data:
+              userId: "mom_beth"
+              token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJtb21fYmV0aCIsInVzZXJUeXBlIjoiTU9NIiwiZW1haWwiOiJiZXRoQGV4YW1wbGUuY29tIiwiaXNzIjoiaHR0cHM6Ly9qd3QtcHJvdmlkZXItZG9tYWluLyIsImV4cCI6MTc1NzQ1NDY4NiwiYXVkIjoiand0LWF1ZGllbmNlIn0.ueguXQzFN-SnGuAFWGL6AyLFcltrsbSVMioyqJfnYUQ"
+              refreshToken: "aP2kbJhAFw3kDzshKp_pAT8BJXhzELXGrtd5fh0VF0Y"
+              userType: "MOM"
+              expiresIn: 1800
+              refreshExpiresIn: 2592000
+
+    LoginErrorResponse:
+      allOf:
+        - $ref: "#/components/schemas/BasicApiResponse"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                error:
+                  type: string
+                  example: "Invalid credentials"
+
+    RegistrationResponse:
+      allOf:
+        - $ref: "#/components/schemas/BasicApiResponse"
+        - type: object
+          properties:
+            data:
+              type: object
+              properties:
+                userId:
+                  type: string
+                  example: "68c09a5258a50d3a97e37061"
+                  description: "Unique identifier for the registered user"
+                token:
+                  type: string
+                  example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  description: "JWT access token for authentication"
+                refreshToken:
+                  type: string
+                  example: "5zVHFs4MfL3w_r-dJpHGDFHs7p8nxMFJHPzvBslX75c"
+                  description: "JWT refresh token for token renewal"
+                userType:
+                  type: string
+                  enum: [ MOM, DOCTOR ]
+                  example: "MOM"
+                  description: "Type of user (MOM or DOCTOR)"
+                expiresIn:
+                  type: integer
+                  example: 1800
+                  description: "Access token expiration time in seconds"
+                refreshExpiresIn:
+                  type: integer
+                  example: 2592000
+                  description: "Refresh token expiration time in seconds"
+              required: [ userId, token, refreshToken, userType, expiresIn, refreshExpiresIn ]
+          example:
+            success: true
+            data:
+              userId: "68c09a5258a50d3a97e37061"
+              token: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2OGMwOWE1MjU4YTUwZDNhOTdlMzcwNjEiLCJ1c2VyVHlwZSI6Ik1PTSIsImVtYWlsIjoidGVzdHN3YWdnZXJAdGVzdC5jb20iLCJpc3MiOiJodHRwczovL2p3dC1wcm92aWRlci1kb21haW4vIiwiZXhwIjoxNzU3NDU0NjgyLCJhdWQiOiJqd3QtYXVkaWVuY2UifQ.rhQByiAYwCi1_jdLmGHciK1hFsUqRzMWIM48HyGAMN0"
+              refreshToken: "5zVHFs4MfL3w_r-dJpHGDFHs7p8nxMFJHPzvBslX75c"
+              userType: "MOM"
+              expiresIn: 1800
+              refreshExpiresIn: 2592000
+
+    CategoryListResponse:
+      allOf:
+        - $ref: "#/components/schemas/BasicApiResponse"
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: "#/components/schemas/Category"
+
+    CategoryResponse:
+      allOf:
+        - $ref: "#/components/schemas/BasicApiResponse"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/Category"
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "cat_prenatal"
+        name:
+          type: string
+          example: "Prenatal Care"
+        description:
+          type: string
+          example: "Products for prenatal care and pregnancy support"
+        imageUrl:
+          type: string
+          example: "https://example.com/prenatal.jpg"
+        isActive:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateCategoryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Prenatal Care"
+        slug:
+          type: string
+          example: "prenatal-care"
+          description: "Optional slug. If not provided, will be auto-generated from name"
+      required: [ name ]
+
+    UpdateCategoryRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Prenatal Care"
+        description:
+          type: string
+          example: "Products for prenatal care and pregnancy support"
+        imageUrl:
+          type: string
+          example: "https://example.com/prenatal.jpg"
+        isActive:
+          type: boolean
+          example: true
+
+    MomProfileResponse:
+      allOf:
+        - $ref: "#/components/schemas/BasicApiResponse"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/Mom"
+
+    Mom:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "mom_alice"
+        email:
+          type: string
+          format: email
+          example: "alice@example.com"
+        fullName:
+          type: string
+          example: "Alice Johnson"
+        phone:
+          type: string
+          example: "+1234567890"
+        maritalStatus:
+          type: string
+          enum: [ SINGLE, MARRIED, DIVORCED, WIDOWED ]
+          example: "MARRIED"
+        photo:
+          type: string
+          example: "uploads/mom_alice_photo.jpg"
+        nidFront:
+          type: string
+          example: "uploads/mom_alice_nid_front.jpg"
+        nidBack:
+          type: string
+          example: "uploads/mom_alice_nid_back.jpg"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    UpdateMomProfileRequest:
+      type: object
+      properties:
+        fullName:
+          type: string
+          example: "Alice Johnson"
+        phone:
+          type: string
+          example: "+1234567890"
+        maritalStatus:
+          type: string
+          enum: [ SINGLE, MARRIED, DIVORCED, WIDOWED ]
+          example: "MARRIED"
+      description: "JSON request for updating mom profile (no photo upload)"
+
+    UpdateMomMultipartRequest:
+      type: object
+      properties:
+        fullName:
+          type: string
+          example: "Alice Johnson"
+        phone:
+          type: string
+          example: "+1234567890"
+        maritalStatus:
+          type: string
+          enum: [ SINGLE, MARRIED, DIVORCED, WIDOWED ]
+          example: "MARRIED"
+        photo:
+          type: string
+          example: "updated_photo.jpg"
+      description: "Multipart request for updating mom profile with photo upload"
+
+    UpdateSessionsRequest:
+      type: object
+      properties:
+        numberOfSessions:
+          type: integer
+          minimum: 0
+          example: 5
+          description: "Number of sessions attended by the mom. Required field - requests without this field will be rejected with 400 Bad Request to prevent silent session resets."
+      required: [ numberOfSessions ]
+      description: "Request to update mom's session count. The numberOfSessions field is required to prevent accidental session resets from malformed requests."
+
+    DoctorListResponse:
+      allOf:
+        - $ref: "#/components/schemas/BasicApiResponse"
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: "#/components/schemas/Doctor"
+
+    DoctorResponse:
+      allOf:
+        - $ref: "#/components/schemas/BasicApiResponse"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/Doctor"
+
+    DoctorProfileResponse:
+      allOf:
+        - $ref: "#/components/schemas/BasicApiResponse"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/Doctor"
+
+    Doctor:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "doctor_john"
+        email:
+          type: string
+          format: email
+          example: "john@example.com"
+        name:
+          type: string
+          example: "Dr. John Smith"
+        phone:
+          type: string
+          example: "+1234567890"
+        specialization:
+          type: string
+          enum: [ PSYCHIATRIST, CLINICAL_PSYCHOLOGIST, COUNSELING_PSYCHOLOGIST, PERINATAL_MENTAL_HEALTH, FAMILY_THERAPIST, TRAUMA_THERAPIST, COGNITIVE_BEHAVIORAL_THERAPIST, GROUP_THERAPIST ]
+          example: "PSYCHIATRIST"
+        photo:
+          type: string
+          example: "uploads/doctor_john_photo.jpg"
+        nidFront:
+          type: string
+          example: "uploads/doctor_john_nid_front.jpg"
+        nidBack:
+          type: string
+          example: "uploads/doctor_john_nid_back.jpg"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    UpdateDoctorProfileRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Dr. John Smith"
+          description: "Doctor name (cannot be empty if provided)"
+        phone:
+          type: string
+          pattern: "^[+]?[0-9\\s\\-\\(\\)\\.]{10,}$"
+          example: "+1234567890"
+          description: "Valid phone number format (minimum 10 digits). Supports formats like +1234567890, (123) 456-7890, 123-456-7890"
+        specialization:
+          type: string
+          enum: [ PSYCHIATRIST, CLINICAL_PSYCHOLOGIST, COUNSELING_PSYCHOLOGIST, PERINATAL_MENTAL_HEALTH, FAMILY_THERAPIST, TRAUMA_THERAPIST, COGNITIVE_BEHAVIORAL_THERAPIST, GROUP_THERAPIST ]
+          example: "PSYCHIATRIST"
+          description: "Must be one of the valid medical specializations"
+      description: "JSON request for updating doctor profile (no photo upload). Uses Gson for lenient JSON parsing. All fields are optional. Note: isAuthorized field cannot be updated by doctors - only admins can change authorization status."
+
+    UpdateDoctorMultipartRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Dr. John Smith"
+          description: "Doctor name (cannot be empty if provided)"
+        phone:
+          type: string
+          pattern: "^[+]?[0-9\\s\\-\\(\\)\\.]{10,}$"
+          example: "+1234567890"
+          description: "Valid phone number format (minimum 10 digits). Supports formats like +1234567890, (123) 456-7890, 123-456-7890"
+        specialization:
+          type: string
+          enum: [ PSYCHIATRIST, CLINICAL_PSYCHOLOGIST, COUNSELING_PSYCHOLOGIST, PERINATAL_MENTAL_HEALTH, FAMILY_THERAPIST, TRAUMA_THERAPIST, COGNITIVE_BEHAVIORAL_THERAPIST, GROUP_THERAPIST ]
+          example: "PSYCHIATRIST"
+          description: "Must be one of the valid medical specializations"
+        photo:
+          type: string
+          example: "updated_photo.jpg"
+          description: "Photo filename (optional)"
+      description: "Multipart request for updating doctor profile with photo upload. Uses Gson for lenient JSON parsing of the data field."
+
+    ProductListResponse:
+      allOf:
+        - $ref: "#/components/schemas/BasicApiResponse"
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: "#/components/schemas/Product"
+
+    ProductResponse:
+      allOf:
+        - $ref: "#/components/schemas/BasicApiResponse"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/Product"
+
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "prod_prenatal_vitamins"
+        name:
+          type: string
+          example: "Prenatal Vitamins"
+        description:
+          type: string
+          example: "Essential vitamins for pregnant women"
+        categoryId:
+          type: string
+          example: "cat_prenatal"
+        defaultSellerId:
+          type: string
+          example: "seller_pharmacy_plus"
+        defaultSellerRef:
+          type: string
+          example: "/sellers/seller_pharmacy_plus"
+        minSessions:
+          type: integer
+          example: 3
+        isActive:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateProductRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Prenatal Vitamins"
+        description:
+          type: string
+          example: "Essential vitamins for pregnant women"
+        categoryId:
+          type: string
+          example: "cat_prenatal"
+        defaultSellerId:
+          type: string
+          example: "seller_pharmacy_plus"
+        minSessions:
+          type: integer
+          example: 3
+      required: [ name, categoryId, defaultSellerId, minSessions ]
+
+    UpdateProductRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Prenatal Vitamins"
+        description:
+          type: string
+          example: "Essential vitamins for pregnant women"
+        categoryId:
+          type: string
+          example: "cat_prenatal"
+        defaultSellerId:
+          type: string
+          example: "seller_pharmacy_plus"
+        minSessions:
+          type: integer
+          example: 3
+        isActive:
+          type: boolean
+          example: true
+
+    SkuOfferListResponse:
+      allOf:
+        - $ref: "#/components/schemas/BasicApiResponse"
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: "#/components/schemas/SkuOffer"
+
+    SkuOfferResponse:
+      allOf:
+        - $ref: "#/components/schemas/BasicApiResponse"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/SkuOffer"
+
+    SkuOffer:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "offer_prenatal_vitamins_1"
+        skuId:
+          type: string
+          example: "sku_prenatal_batchA"
+        sellerId:
+          type: string
+          example: "seller_pharmacy_plus"
+        originalPrice:
+          type: number
+          format: float
+          example: 25.99
+        salePrice:
+          type: number
+          format: float
+          example: 22.99
+        discountPercentage:
+          type: number
+          format: float
+          example: 11.5
+        stockQuantity:
+          type: integer
+          example: 100
+        isActive:
+          type: boolean
+          example: true
+        validFrom:
+          type: string
+          format: date-time
+        validUntil:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CreateSkuOfferRequest:
+      type: object
+      properties:
+        skuId:
+          type: string
+          example: "sku_prenatal_batchA"
+        sellerId:
+          type: string
+          example: "seller_pharmacy_plus"
+        originalPrice:
+          type: number
+          format: float
+          example: 25.99
+        salePrice:
+          type: number
+          format: float
+          example: 22.99
+        stockQuantity:
+          type: integer
+          example: 100
+        validFrom:
+          type: string
+          format: date-time
+        validUntil:
+          type: string
+          format: date-time
+      required: [ skuId, sellerId, originalPrice, salePrice, stockQuantity ]
+
+    UpdateSkuOfferRequest:
+      type: object
+      properties:
+        originalPrice:
+          type: number
+          format: float
+          example: 25.99
+        salePrice:
+          type: number
+          format: float
+          example: 22.99
+        stockQuantity:
+          type: integer
+          example: 100
+        isActive:
+          type: boolean
+          example: true
+        validFrom:
+          type: string
+          format: date-time
+        validUntil:
+          type: string
+          format: date-time
+
+    CartResponse:
+      allOf:
+        - $ref: "#/components/schemas/BasicApiResponse"
+        - type: object
+          properties:
+            data:
+              $ref: "#/components/schemas/Cart"
+
+    Cart:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "cart_mom_alice"
+        userId:
+          type: string
+          example: "mom_alice"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CartItemWithPrice"
+        totalItems:
+          type: integer
+          example: 2
+        totalPrice:
+          type: number
+          format: float
+          example: 45.98
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    CartItemWithPrice:
+      type: object
+      properties:
+        skuId:
+          type: string
+          example: "sku_prenatal_batchA"
+        quantity:
+          type: integer
+          example: 2
+        priceSnapshot:
+          type: number
+          format: float
+          example: 22.99
+        offerId:
+          type: string
+          example: "offer_prenatal_vitamins_1"
+
+    AddToCartRequest:
+      type: object
+      properties:
+        skuId:
+          type: string
+          example: "sku_prenatal_batchA"
+        quantity:
+          type: integer
+          minimum: 1
+          example: 2
+      required: [ skuId, quantity ]
+
+    UpdateCartItemRequest:
+      type: object
+      properties:
+        quantity:
+          type: integer
+          minimum: 1
+          example: 3
+      required: [ quantity ]
+
+    RegisterMomRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          pattern: "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
+          example: "jane.doe@example.com"
+          description: "Valid email address format required"
+        password:
+          type: string
+          format: password
+          minLength: 6
+          example: "securepassword123"
+          description: "Password must be at least 6 characters long"
+        fullName:
+          type: string
+          minLength: 1
+          example: "Jane Doe"
+          description: "Full name cannot be empty"
+        phone:
+          type: string
+          pattern: "^[+]?[0-9\\s\\-\\(\\)\\.]{10,}$"
+          example: "+1-555-1234"
+          description: "Valid phone number format (minimum 10 digits). Supports formats like +1234567890, (123) 456-7890, 123-456-7890"
+        maritalStatus:
+          type: string
+          enum: [ SINGLE, MARRIED, DIVORCED, WIDOWED ]
+          example: "MARRIED"
+          description: "Must be one of the valid marital status values"
+      required: [ email, password, fullName, phone, maritalStatus ]
+
+    RegisterDoctorRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          pattern: "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"
+          example: "dr.smith@example.com"
+          description: "Valid email address format required"
+        password:
+          type: string
+          format: password
+          minLength: 6
+          example: "securepassword123"
+          description: "Password must be at least 6 characters long"
+        name:
+          type: string
+          minLength: 1
+          example: "Dr. John Smith"
+          description: "Doctor name cannot be empty"
+        phone:
+          type: string
+          pattern: "^[+]?[0-9\\s\\-\\(\\)\\.]{10,}$"
+          example: "+1-555-5678"
+          description: "Valid phone number format (minimum 10 digits). Supports formats like +1234567890, (123) 456-7890, 123-456-7890"
+        specialization:
+          type: string
+          enum: [ PSYCHIATRIST, CLINICAL_PSYCHOLOGIST, COUNSELING_PSYCHOLOGIST, PERINATAL_MENTAL_HEALTH, FAMILY_THERAPIST, TRAUMA_THERAPIST, COGNITIVE_BEHAVIORAL_THERAPIST, GROUP_THERAPIST ]
+          example: "PSYCHIATRIST"
+          description: "Must be one of the valid medical specializations"
+      required: [ email, password, name, phone, specialization ]
+
+    ValidationErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          description: "Specific validation error message"
+          examples:
+            invalidEmail:
+              value: "Invalid email format"
+            invalidPassword:
+              value: "Password must be at least 6 characters long"
+            invalidPhone:
+              value: "Invalid phone number format. Please use a valid phone number."
+            invalidMaritalStatus:
+              value: "Invalid marital status. Must be one of: SINGLE, MARRIED, DIVORCED, WIDOWED"
+            invalidSpecialization:
+              value: "Invalid specialization. Must be one of: PSYCHIATRIST, CLINICAL_PSYCHOLOGIST, COUNSELING_PSYCHOLOGIST, PERINATAL_MENTAL_HEALTH, FAMILY_THERAPIST, TRAUMA_THERAPIST, COGNITIVE_BEHAVIORAL_THERAPIST, GROUP_THERAPIST"
+            fieldsBlank:
+              value: "All required fields must be provided"
+      required: [ success, message ]
+
+    RefreshTokenRequest:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+          example: "MJCvRLCw7vw_lo2PU3KCN4zrHB1BfT_X86SW63zLWuk"
+          description: "Refresh token received from login or previous refresh"
+      required: [ refreshToken ]
+
+    AuthorizationRequest:
+      type: object
+      properties:
+        isAuthorized:
+          type: boolean
+          example: true
+          description: "Authorization status to set for the doctor"                           
+      required: [ isAuthorized ]
+
+    CreateOrderRequest:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItemRequest"
+          description: List of items to include in the order
+      required: [ items ]
+
+    OrderItemRequest:
+      type: object
+      properties:
+        skuId:
+          type: string
+          example: "sku_prenatal_batchA"
+          description: SKU ID for the item
+        qty:
+          type: integer
+          minimum: 1
+          example: 2
+          description: Quantity of the item
+        offerId:
+          type: string
+          example: "offer_prenatal_batchA_001"
+          description: Optional SKU offer ID. If not provided, will use the best offer for the SKU
+      required: [ skuId, qty ]
+
+    UpdateOrderStatusRequest:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [ PENDING, CONFIRMED, SHIPPED, DELIVERED, CANCELLED ]
+          example: "CONFIRMED"
+          description: New status for the order
+      required: [ status ]
+
+    OrderResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "order_123"
+          description: Unique order identifier
+        orderNo:
+          type: string
+          example: "ORD-1640995200000-001"
+          description: Human-readable order number
+        momId:
+          type: string
+          example: "mom_beth"
+          description: ID of the mom who placed the order
+        placedAt:
+          type: integer
+          example: 1640995200000
+          description: Timestamp when order was placed
+        status:
+          type: string
+          enum: [ PENDING, CONFIRMED, SHIPPED, DELIVERED, CANCELLED ]
+          example: "PENDING"
+          description: Current order status
+        currency:
+          type: string
+          example: "USD"
+          description: Currency code for the order
+        subtotal:
+          type: number
+          format: double
+          example: 100.0
+          description: Subtotal amount before taxes and shipping
+        discountTotal:
+          type: number
+          format: double
+          example: 0.0
+          description: Total discount amount
+        taxTotal:
+          type: number
+          format: double
+          example: 0.0
+          description: Total tax amount
+        shippingTotal:
+          type: number
+          format: double
+          example: 0.0
+          description: Total shipping cost
+        grandTotal:
+          type: number
+          format: double
+          example: 100.0
+          description: Final total amount
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItemResponse"
+          description: List of items in the order
+        createdAt:
+          type: integer
+          example: 1640995200000
+          description: Timestamp when order was created
+      required: [ id, orderNo, momId, placedAt, status, currency, subtotal, discountTotal, taxTotal, shippingTotal, grandTotal, items, createdAt ]
+
+    OrderItemResponse:
+      type: object
+      properties:
+        skuId:
+          type: string
+          example: "sku_prenatal_batchA"
+          description: SKU identifier
+        productId:
+          type: string
+          example: "prod_prenatal_vitamins"
+          description: Product identifier
+        sellerId:
+          type: string
+          example: "seller_health_plus"
+          description: Seller identifier
+        qty:
+          type: integer
+          example: 2
+          description: Quantity ordered
+        unitPrice:
+          type: number
+          format: double
+          example: 50.0
+          description: Price per unit
+        lineTotal:
+          type: number
+          format: double
+          example: 100.0
+          description: Total price for this line item
+        productName:
+          type: string
+          example: "Prenatal Vitamins"
+          description: Name of the product
+      required: [ skuId, productId, sellerId, qty, unitPrice, lineTotal, productName ]

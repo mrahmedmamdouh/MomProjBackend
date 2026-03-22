@@ -1,0 +1,59 @@
+---
+globs: *.sh,*.kt
+---
+
+# Testing Rules
+
+## Test Structure
+Use bash scripts in [tests/](mdc:tests/) directory for API testing:
+
+```bash
+#!/bin/bash
+# Source common utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/test-common.sh"
+
+test_function_name() {
+    print_subheader "Test Description"
+    
+    # Ensure proper authentication
+    if [ -z "$TOKEN_VAR" ]; then
+        login_function || return 1
+    fi
+    
+    # Test implementation
+    print_test "Test Action"
+    local response
+    response=$(curl_request "HTTP_METHOD" "$BASE_URL/api/endpoint" "request_data" "$TOKEN_VAR")
+    
+    local status_code="${response: -3}"
+    local response_body="${response%???}"
+    
+    if test_status_code 200 "$status_code" "Test Name"; then
+        test_json_field "$response_body" "success" "true" "Success Message"
+        print_success "✅ Success Description"
+    else
+        print_error "❌ Error Description (Status: $status_code)"
+    fi
+}
+```
+
+## Test Coverage Requirements
+- Test both authorized and unauthorized scenarios
+- Include comprehensive validation testing
+- Test edge cases and error conditions
+- Test file uploads and multipart requests
+- Verify response formats
+
+## Test Files
+- [test-common.sh](mdc:tests/test-common.sh) - Shared testing utilities
+- [test-mom.sh](mdc:tests/test-mom.sh) - Mom API tests
+- [test-doctor.sh](mdc:tests/test-doctor.sh) - Doctor API tests
+- [test-admin.sh](mdc:tests/test-admin.sh) - Admin API tests
+- [test-auth.sh](mdc:tests/test-auth.sh) - Authentication tests
+
+## Unit Tests
+- Write unit tests for service layer logic
+- Test validation functions
+- Test repository operations
+- Use Kotlin test framework

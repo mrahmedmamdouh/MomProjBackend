@@ -1,0 +1,44 @@
+---
+globs: *.md,*.yaml,*.json
+---
+
+# Documentation Maintenance Rules
+
+## Always Keep Updated
+- **OpenAPI documentation** must be updated when adding new endpoints
+- **Postman collection** must be updated when adding new requests
+- **Cursor rules** must be updated when project structure changes
+- **Cursor commands** must be updated when workflows change
+
+## Documentation Standards
+- Use proper file references: [filename](mdc:path)
+- Include comprehensive examples
+- Test all examples before committing
+- Validate syntax of all documentation files
+
+## Update Triggers
+- New API endpoints added
+- Authentication changes
+- New validation rules
+- Project structure changes
+- Technology stack updates
+
+## Key Files to Maintain
+- [src/main/resources/openapi/documentation.yaml](mdc:src/main/resources/openapi/documentation.yaml) - OpenAPI/Swagger docs
+- [postman_collection.json](mdc:postman_collection.json) - Postman collection
+- [.cursor/rules/](mdc:.cursor/rules) - Cursor rules directory
+- [.cursor/commands/](mdc:.cursor/commands/) - Cursor commands directory
+- [.cursor/instructions/](mdc:.cursor/instructions/) - Cursor instructions directory
+- [README.md](mdc:README.md) - Project documentation
+
+## Validation Commands
+```bash
+# Validate OpenAPI YAML
+python -c "import yaml; yaml.safe_load(open('src/main/resources/openapi/documentation.yaml'))"
+
+# Validate Postman JSON
+python -c "import json; json.load(open('postman_collection.json'))"
+
+# Check file references in rules
+grep -r "mdc:" .cursor/rules/
+```

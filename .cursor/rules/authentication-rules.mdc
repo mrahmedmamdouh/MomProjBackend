@@ -1,0 +1,43 @@
+---
+globs: *.kt
+---
+
+# Authentication & Authorization Rules
+
+## Route Interceptors
+Use proper route interceptors based on requirements:
+
+### Full Authentication + Authorization
+```kotlin
+// Requires authentication AND authorization check
+momRoute("/api/endpoint", momService) { /* 8+ sessions required */ }
+doctorRoute("/api/endpoint", doctorService) { /* admin authorization required */ }
+adminRoute("/api/endpoint", adminService) { /* admin role required */ }
+```
+
+### Basic Authentication Only
+```kotlin
+// Requires authentication but NO authorization check
+momRouteBasic(momService) {
+    route("/api/endpoint") { /* any authenticated mom */ }
+}
+doctorRouteBasic(doctorService) {
+    route("/api/endpoint") { /* any authenticated doctor */ }
+}
+```
+
+## Key Files
+- [AuthInterceptor.kt](mdc:src/main/kotlin/auth/AuthInterceptor.kt) - Contains all route interceptors
+- [MomRoutes.kt](mdc:src/main/kotlin/routes/mom/MomRoutes.kt) - Mom-specific routes
+- [DoctorRoutes.kt](mdc:src/main/kotlin/routes/doctor/DoctorRoutes.kt) - Doctor-specific routes
+
+## Authorization Logic
+- **Moms**: Need 8+ sessions for e-commerce access (`momRoute`)
+- **Doctors**: Need admin authorization for full access (`doctorRoute`)
+- **Admins**: Full system access (`adminRoute`)
+- **Check Authorization**: Use `momRouteBasic`/`doctorRouteBasic` for status endpoints
+
+## JWT Security
+- Always validate JWT tokens on protected routes
+- Use `call.getCurrentUserIdSafe()` to get authenticated user ID
+- Implement proper token expiration and refresh mechanisms

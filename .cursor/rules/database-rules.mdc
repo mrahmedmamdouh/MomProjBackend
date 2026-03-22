@@ -1,0 +1,52 @@
+---
+globs: *.kt
+---
+
+# Database Rules
+
+## MongoDB with KMongo
+Use proper MongoDB patterns with KMongo library:
+
+```kotlin
+class Repository : KoinComponent {
+    private val database: MongoDatabase by inject()
+    private val collection = database.getCollection<Model>("collectionName")
+    
+    fun findById(id: String): Model? {
+        return collection.findOne(Model::id eq id)
+    }
+    
+    fun save(model: Model): Boolean {
+        return try {
+            collection.insertOne(model)
+            true
+        } catch (e: Exception) {
+            false
+        }
+    }
+}
+```
+
+## Repository Pattern
+- Place repositories in [src/main/kotlin/data/repository/](mdc:src/main/kotlin/data/repository/)
+- Use dependency injection (Koin) for database access
+- Implement proper error handling
+- Use parameterized queries (KMongo handles this)
+
+## Data Models
+- Place data models in [src/main/kotlin/data/models/](mdc:src/main/kotlin/data/models/)
+- Use `@BsonId` for MongoDB ObjectId
+- Include proper field validation
+- Use appropriate data types
+
+## Database Operations
+- Use proper indexing for performance
+- Implement connection pooling
+- Handle database errors gracefully
+- Use transactions where appropriate
+- Implement proper data validation
+
+## Key Files
+- [Databases.kt](mdc:src/main/kotlin/Databases.kt) - Database configuration
+- Repository implementations in [src/main/kotlin/data/repository/](mdc:src/main/kotlin/data/repository/)
+- Data models in [src/main/kotlin/data/models/](mdc:src/main/kotlin/data/models/)

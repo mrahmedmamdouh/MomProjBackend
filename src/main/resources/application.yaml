@@ -1,0 +1,16 @@
+ktor:
+  application:
+    modules:
+      - com.evelolvetech.ApplicationKt.module
+  deployment:
+    port: 8080
+jwt:
+  domain: "https://momcare-api.onrender.com"
+  audience: "momcare-api"
+  realm: "momcare"
+  secret: "change-me-in-production-use-env-var"
+
+auth:
+  accessTokenExpiryMinutes: 30
+  refreshTokenExpiryDays: 30
+  idleTimeoutHours: 24

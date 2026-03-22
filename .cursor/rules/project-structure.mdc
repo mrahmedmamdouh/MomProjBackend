@@ -1,0 +1,47 @@
+---
+alwaysApply: true
+---
+
+# Mom Care Platform Backend - Project Structure
+
+## Technology Stack
+- **Framework**: Ktor (Kotlin)
+- **Database**: MongoDB with KMongo
+- **Authentication**: JWT with refresh tokens
+- **Serialization**: Gson (preferred), avoid kotlinx.serialization
+- **Dependency Injection**: Koin
+- **Testing**: Bash scripts with curl and jq
+- **Documentation**: OpenAPI/Swagger, Postman
+
+## File Structure
+```
+src/main/kotlin/
+├── Application.kt                 # Main application entry point
+├── auth/                         # Authentication & authorization
+│   ├── AuthAnnotations.kt
+│   └── AuthInterceptor.kt
+├── data/
+│   ├── models/                   # Data models
+│   ├── requests/                 # Request DTOs
+│   ├── responses/                # Response DTOs
+│   └── repository/               # Data access layer
+├── di/                          # Dependency injection (Koin)
+│   └── MainModule.kt
+├── routes/                      # API route definitions
+│   ├── admin/                   # Admin-only routes
+│   ├── auth/                    # Authentication routes
+│   ├── doctor/                  # Doctor routes
+│   └── mom/                     # Mom routes
+├── service/                     # Business logic layer
+│   ├── auth/
+│   ├── doctor/
+│   └── mom/
+└── util/                        # Utility functions
+```
+
+## Key Files
+- [Application.kt](mdc:src/main/kotlin/Application.kt) - Main application entry point
+- [Routing.kt](mdc:src/main/kotlin/Routing.kt) - Route configuration
+- [MainModule.kt](mdc:src/main/kotlin/di/MainModule.kt) - Dependency injection setup
+- [AuthInterceptor.kt](mdc:src/main/kotlin/auth/AuthInterceptor.kt) - Authentication interceptors
+- [.cursorrules](mdc:.cursorrules) - Project coding standards

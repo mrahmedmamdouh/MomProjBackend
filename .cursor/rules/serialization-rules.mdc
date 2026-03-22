@@ -1,0 +1,42 @@
+---
+globs: *.kt
+---
+
+# Serialization Rules
+
+## CRITICAL: Use Gson Only
+- **ALWAYS use Gson** for JSON serialization/deserialization
+- **NEVER use kotlinx.serialization** annotations (@Serializable)
+- Use injected Gson instance from Koin module, never instantiate Gson() directly
+
+## Correct Patterns
+```kotlin
+// ✅ Correct - Use Gson
+val request = gson.fromJson(call.receiveText(), RequestClass::class.java)
+
+// ✅ Correct - Multipart with Gson
+val jsonString = part.value.trim()
+val request = gson.fromJson(jsonString, RequestClass::class.java)
+```
+
+## Incorrect Patterns
+```kotlin
+// ❌ Wrong - Using kotlinx.serialization
+@Serializable
+data class Request(...)
+
+// ❌ Wrong - Direct Gson instantiation
+val gson = Gson()
+val request = gson.fromJson(...)
+```
+
+## Request Models
+- Place all request models in [src/main/kotlin/data/requests/](mdc:src/main/kotlin/data/requests/)
+- Each request class should be in its own file
+- Use data classes with proper validation
+- No @Serializable annotations
+
+## Route Functions
+- Routes should accept injected Gson parameter: `fun Route.routeName(gson: Gson)`
+- Use `gson.fromJson(call.receiveText(), RequestClass::class.java)` for deserialization
+- Handle both JSON and multipart requests where applicable

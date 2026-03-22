@@ -1,0 +1,61 @@
+---
+globs: *.yaml,*.json
+---
+
+# Documentation Rules
+
+## OpenAPI Documentation
+Update [src/main/resources/openapi/documentation.yaml](mdc:src/main/resources/openapi/documentation.yaml) for new endpoints:
+
+```yaml
+/api/endpoint:
+  get:
+    operationId: getEndpoint
+    tags: [ TagName ]
+    summary: Brief description
+    description: Detailed description
+    security:
+      - BearerAuth: []
+    responses:
+      "200":
+        description: Success description
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/BasicApiResponse"
+                - type: object
+                  properties:
+                    data:
+                      $ref: "#/components/schemas/ResponseModel"
+      "400":
+        description: Bad request
+      "401":
+        description: Unauthorized
+```
+
+## Postman Collection
+Update [postman_collection.json](mdc:postman_collection.json) for new endpoints:
+
+```json
+{
+  "name": "Endpoint Name",
+  "request": {
+    "method": "GET",
+    "header": [{"key": "Authorization", "value": "Bearer {{auth_token}}"}],
+    "url": {
+      "raw": "{{base_url}}/api/endpoint",
+      "host": ["{{base_url}}"],
+      "path": ["api", "endpoint"]
+    },
+    "description": "Endpoint description"
+  }
+}
+```
+
+## Documentation Requirements
+- Include examples for both success and error responses
+- Document authorization requirements clearly
+- Update both Swagger and Postman when adding endpoints
+- Include request/response schemas
+- Document validation rules and error codes
