@@ -2,15 +2,9 @@ FROM gradle:8.5-jdk17-alpine AS builder
 
 WORKDIR /app
 
-COPY gradle/ gradle/
-COPY gradlew .
-COPY gradle.properties .
-COPY build.gradle.kts .
-COPY settings.gradle.kts .
+COPY . .
 
-COPY src/ src/
-
-RUN ./gradlew buildFatJar -x test --no-daemon
+RUN gradle buildFatJar -x test --no-daemon
 
 FROM eclipse-temurin:17-jre-alpine
 
