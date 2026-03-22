@@ -15,34 +15,30 @@ fun Route.doctorStreamingRoutes(
     streamingService: StreamingService,
     doctorService: DoctorService
 ) {
-    doctorRoute(doctorService) {
-        route("/api/streaming") {
-            post("/start/{sessionId}") {
-                try {
-                    val doctorId = call.getCurrentUserIdSafe()
-                    val sessionId = call.parameters["sessionId"] ?: run {
-                        call.respondWithError("Session ID required", HttpStatusCode.BadRequest)
-                        return@post
-                    }
-                    val result = streamingService.doctorStartLiveSession(doctorId, sessionId)
-                    call.respondWithMapping(result)
-                } catch (e: Exception) {
-                    call.respondWithError("Error: ${e.message}", HttpStatusCode.InternalServerError)
+    doctorRoute("/api/streaming", doctorService) {
+        post("/start/{sessionId}") {
+            try {
+                val doctorId = call.getCurrentUserIdSafe()
+                val sessionId = call.parameters["sessionId"] ?: run {
+                    call.respondWithError("Session ID required", HttpStatusCode.BadRequest)
+                    return@post
                 }
+                call.respondWithMapping(streamingService.doctorStartLiveSession(doctorId, sessionId))
+            } catch (e: Exception) {
+                call.respondWithError("Error: ${e.message}", HttpStatusCode.InternalServerError)
             }
+        }
 
-            post("/end/{sessionId}") {
-                try {
-                    val doctorId = call.getCurrentUserIdSafe()
-                    val sessionId = call.parameters["sessionId"] ?: run {
-                        call.respondWithError("Session ID required", HttpStatusCode.BadRequest)
-                        return@post
-                    }
-                    val result = streamingService.doctorEndLiveSession(doctorId, sessionId)
-                    call.respondWithMapping(result)
-                } catch (e: Exception) {
-                    call.respondWithError("Error: ${e.message}", HttpStatusCode.InternalServerError)
+        post("/end/{sessionId}") {
+            try {
+                val doctorId = call.getCurrentUserIdSafe()
+                val sessionId = call.parameters["sessionId"] ?: run {
+                    call.respondWithError("Session ID required", HttpStatusCode.BadRequest)
+                    return@post
                 }
+                call.respondWithMapping(streamingService.doctorEndLiveSession(doctorId, sessionId))
+            } catch (e: Exception) {
+                call.respondWithError("Error: ${e.message}", HttpStatusCode.InternalServerError)
             }
         }
     }
@@ -61,8 +57,7 @@ fun Route.momStreamingRoutes(
                         call.respondWithError("Session ID required", HttpStatusCode.BadRequest)
                         return@post
                     }
-                    val result = streamingService.momJoinLiveSession(momId, sessionId)
-                    call.respondWithMapping(result)
+                    call.respondWithMapping(streamingService.momJoinLiveSession(momId, sessionId))
                 } catch (e: Exception) {
                     call.respondWithError("Error: ${e.message}", HttpStatusCode.InternalServerError)
                 }
@@ -74,8 +69,7 @@ fun Route.momStreamingRoutes(
                         call.respondWithError("Session ID required", HttpStatusCode.BadRequest)
                         return@get
                     }
-                    val result = streamingService.getSessionRoomInfo(sessionId)
-                    call.respondWithMapping(result)
+                    call.respondWithMapping(streamingService.getSessionRoomInfo(sessionId))
                 } catch (e: Exception) {
                     call.respondWithError("Error: ${e.message}", HttpStatusCode.InternalServerError)
                 }

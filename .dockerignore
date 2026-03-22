@@ -17,7 +17,7 @@ docs/
 # Build artifacts
 build/
 .gradle/
-gradle/
+gradle/wrapper/
 gradlew
 gradlew.bat
 

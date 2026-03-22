@@ -81,8 +81,8 @@ fun Route.ratingRoutes(ratingService: ProductRatingService, momService: MomServi
                     momId = momId,
                     productId = request.productId,
                     rating = request.rating,
-                    title = request.title,
-                    comment = request.comment
+                    title = request.title ?: "",
+                    comment = request.comment ?: ""
                 )
                 call.respondWithMapping(result, statusCode = HttpStatusCode.Created)
             } catch (e: Exception) {

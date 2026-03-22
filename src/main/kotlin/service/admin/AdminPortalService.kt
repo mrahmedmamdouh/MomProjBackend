@@ -116,7 +116,7 @@ class AdminPortalService(
     }
 
     suspend fun overrideAttendance(bookingId: String, attended: Boolean, adminId: String, reason: String): BasicApiResponse<Unit> {
-        bookingRepo.markAttendance(bookingId, attended)
+        bookingRepo.markAttendance(bookingId, attended, null, null)
         logAction(adminId, "", "OVERRIDE_ATTENDANCE", "BOOKING", bookingId, reason, "", "attended=$attended")
         return BasicApiResponse(success = true, message = "Attendance overridden")
     }

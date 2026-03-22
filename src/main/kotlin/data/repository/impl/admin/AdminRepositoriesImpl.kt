@@ -10,8 +10,8 @@ import com.mongodb.client.MongoDatabase
 import org.litote.kmongo.*
 
 class VenueRepositoryImpl(db: MongoDatabase) : VenueRepository {
-    private val venues: MongoCollection<ApprovedVenue> = db.getCollection("approved_venues")
-    private val reviews: MongoCollection<VenueReview> = db.getCollection("venue_reviews")
+    private val venues: MongoCollection<ApprovedVenue> = db.getCollection<ApprovedVenue>("approved_venues")
+    private val reviews: MongoCollection<VenueReview> = db.getCollection<VenueReview>("venue_reviews")
 
     override suspend fun createVenue(venue: ApprovedVenue) = try { venues.insertOne(venue); true } catch (e: Exception) { false }
     override suspend fun getVenueById(id: String) = venues.findOne(ApprovedVenue::id eq id)
@@ -40,7 +40,7 @@ class VenueRepositoryImpl(db: MongoDatabase) : VenueRepository {
 }
 
 class AuditLogRepositoryImpl(db: MongoDatabase) : AuditLogRepository {
-    private val logs: MongoCollection<AuditLog> = db.getCollection("audit_logs")
+    private val logs: MongoCollection<AuditLog> = db.getCollection<AuditLog>("audit_logs")
     override suspend fun log(entry: AuditLog) = try { logs.insertOne(entry); true } catch (e: Exception) { false }
     override suspend fun getByAdmin(adminId: String, page: Int, size: Int) = logs.find(AuditLog::adminId eq adminId).sort(descending(AuditLog::createdAt)).skip(page * size).limit(size).toList()
     override suspend fun getByTarget(targetType: String, targetId: String) = logs.find(and(AuditLog::targetType eq targetType, AuditLog::targetId eq targetId)).sort(descending(AuditLog::createdAt)).toList()
@@ -50,7 +50,7 @@ class AuditLogRepositoryImpl(db: MongoDatabase) : AuditLogRepository {
 }
 
 class SystemConfigRepositoryImpl(db: MongoDatabase) : SystemConfigRepository {
-    private val configs: MongoCollection<SystemConfig> = db.getCollection("system_config")
+    private val configs: MongoCollection<SystemConfig> = db.getCollection<SystemConfig>("system_config")
     override suspend fun getConfig(): SystemConfig {
         return configs.findOne(SystemConfig::id eq "system_config") ?: SystemConfig().also { configs.insertOne(it) }
     }
@@ -58,7 +58,7 @@ class SystemConfigRepositoryImpl(db: MongoDatabase) : SystemConfigRepository {
 }
 
 class AdminAlertRepositoryImpl(db: MongoDatabase) : AdminAlertRepository {
-    private val alerts: MongoCollection<AdminAlert> = db.getCollection("admin_alerts")
+    private val alerts: MongoCollection<AdminAlert> = db.getCollection<AdminAlert>("admin_alerts")
     override suspend fun createAlert(alert: AdminAlert) = try { alerts.insertOne(alert); true } catch (e: Exception) { false }
     override suspend fun getUnread(page: Int, size: Int) = alerts.find(AdminAlert::isRead eq false).sort(descending(AdminAlert::createdAt)).skip(page * size).limit(size).toList()
     override suspend fun getAll(page: Int, size: Int) = alerts.find().sort(descending(AdminAlert::createdAt)).skip(page * size).limit(size).toList()
@@ -71,7 +71,7 @@ class AdminAlertRepositoryImpl(db: MongoDatabase) : AdminAlertRepository {
 }
 
 class EmergencyResourceRepositoryImpl(db: MongoDatabase) : EmergencyResourceRepository {
-    private val resources: MongoCollection<EmergencyResource> = db.getCollection("emergency_resources")
+    private val resources: MongoCollection<EmergencyResource> = db.getCollection<EmergencyResource>("emergency_resources")
     override suspend fun create(resource: EmergencyResource) = try { resources.insertOne(resource); true } catch (e: Exception) { false }
     override suspend fun getById(id: String) = resources.findOne(EmergencyResource::id eq id)
     override suspend fun getActive(country: String) = resources.find(and(EmergencyResource::isActive eq true, EmergencyResource::country eq country)).sort(ascending(EmergencyResource::displayOrder)).toList()
@@ -81,7 +81,7 @@ class EmergencyResourceRepositoryImpl(db: MongoDatabase) : EmergencyResourceRepo
 }
 
 class ContentReportRepositoryImpl(db: MongoDatabase) : ContentReportRepository {
-    private val reports: MongoCollection<ContentReport> = db.getCollection("content_reports")
+    private val reports: MongoCollection<ContentReport> = db.getCollection<ContentReport>("content_reports")
     override suspend fun create(report: ContentReport) = try { reports.insertOne(report); true } catch (e: Exception) { false }
     override suspend fun getById(id: String) = reports.findOne(ContentReport::id eq id)
     override suspend fun getPending(page: Int, size: Int) = reports.find(ContentReport::status eq "PENDING").sort(descending(ContentReport::createdAt)).skip(page * size).limit(size).toList()

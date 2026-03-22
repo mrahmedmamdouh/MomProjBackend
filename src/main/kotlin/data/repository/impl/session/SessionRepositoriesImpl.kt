@@ -91,17 +91,11 @@ class GroupSessionRepositoryImpl(
 
     override suspend fun updateSession(id: String, updates: Map<String, Any?>): Boolean {
         return try {
-            val bsonUpdates = updates.map { (key, value) ->
-                setValue(GroupSession::class.java.getDeclaredField(key).let {
-                    it.isAccessible = true
-                    it
-                }, value)
-            }
+            val setDoc = org.bson.Document(updates)
+            setDoc["updatedAt"] = System.currentTimeMillis()
             val result = sessions.updateOne(
                 GroupSession::id eq id,
-                combine(
-                    bsonUpdates + setValue(GroupSession::updatedAt, System.currentTimeMillis())
-                )
+                org.bson.Document("\$set", setDoc)
             )
             result.modifiedCount > 0
         } catch (e: Exception) {

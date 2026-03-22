@@ -112,7 +112,7 @@ fun Route.adminPortalRoutes(
         post {
             val adminId = call.getCurrentUserIdSafe()
             val venue = call.receive<ApprovedVenue>()
-            call.respondWithMapping(venueService.createVenue(venue, adminId), HttpStatusCode.Created)
+            call.respondWithMapping(venueService.createVenue(venue, adminId), statusCode = HttpStatusCode.Created)
         }
         put("/{id}") {
             val adminId = call.getCurrentUserIdSafe()

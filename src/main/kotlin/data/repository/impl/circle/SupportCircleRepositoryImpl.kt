@@ -85,7 +85,7 @@ class SupportCircleRepositoryImpl(
             val result = circles.updateOne(
                 SupportCircle::id eq circleId,
                 combine(
-                    pull(SupportCircle::members, CircleMember::momId eq momId),
+                    pullByFilter(SupportCircle::members, CircleMember::momId eq momId),
                     setValue(SupportCircle::updatedAt, System.currentTimeMillis())
                 )
             )
