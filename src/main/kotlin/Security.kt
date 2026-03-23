@@ -7,10 +7,10 @@ import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
 
 fun Application.configureSecurity() {
-    val jwtAudience = environment.config.property("jwt.audience").getString()
-    val jwtDomain = environment.config.property("jwt.domain").getString()
+    val jwtAudience = System.getenv("JWT_AUDIENCE") ?: environment.config.property("jwt.audience").getString()
+    val jwtDomain = System.getenv("JWT_ISSUER") ?: environment.config.property("jwt.domain").getString()
     val jwtRealm = environment.config.property("jwt.realm").getString()
-    val jwtSecret = environment.config.property("jwt.secret").getString()
+    val jwtSecret = System.getenv("JWT_SECRET") ?: environment.config.property("jwt.secret").getString()
 
     authentication {
         jwt {
