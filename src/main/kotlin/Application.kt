@@ -22,6 +22,9 @@ fun Application.module() {
     configureHTTP()
     configureRouting()
 
+    // Create upload directories
+    com.evelolvetech.util.FileUploadUtil.init()
+
     log.info("MomCare Platform starting on port ${System.getenv("PORT") ?: "8080"}")
 
     // Seed in background so server can bind port immediately

@@ -16,7 +16,8 @@ WORKDIR /app
 
 COPY --from=builder /app/build/libs/*-all.jar app.jar
 
-RUN chown appuser:appuser app.jar
+RUN mkdir -p uploads/nids uploads/profiles && \
+    chown -R appuser:appuser /app
 
 USER appuser
 

@@ -11,7 +11,7 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_ISSUER
-        value: https://momcare-api.onrender.com
+        value: https://momprojbackend.onrender.com
       - key: JWT_AUDIENCE
         value: momcare-api
       - key: LIVEKIT_API_KEY
